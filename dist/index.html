@@ -1,0 +1,1280 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="description" content="專為台大生打造的個人大學生涯 AI 教練，整合校內資訊、機會探索與生涯待辦。" />
+  <link rel="icon" type="image/png" href="assets/next-at-ntu-logo.png" />
+  <title>Next@NTU — 大學生涯 AI Coach</title>
+  <style>
+    :root {
+      --bg:#0a0a0a; --panel:#111; --panel-2:#171717; --line:#2b2b2b;
+      --line-strong:#424242; --text:#f4f4f2; --muted:#969696; --soft:#c6c6c1;
+      --white:#f5f5f0; --black:#090909; --danger:#ddd; --radius:3px;
+    }
+    * { box-sizing:border-box; }
+    html, body { height:100%; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif; font-size:16px; overflow:hidden; }
+    button, textarea, input { font:inherit; }
+    button { color:inherit; }
+    .mono { font-family:"SFMono-Regular", Consolas, "Liberation Mono", monospace; letter-spacing:.03em; }
+    .app { height:100%; display:grid; grid-template-rows:56px 1fr; }
+    body:not(.signed-in) .app { display:none; }
+    body.signed-in .login-screen { display:none; }
+    .topbar { position:relative; z-index:40; display:flex; align-items:center; border-bottom:1px solid var(--line); background:#0d0d0d; padding:0 18px; min-width:0; }
+    .brand { display:flex; align-items:center; gap:11px; width:258px; flex:0 0 auto; font-weight:750; letter-spacing:-.03em; }
+    .brand-mark { width:25px; height:25px; display:grid; place-items:center; background:var(--white); color:#0a0a0a; font-size:13px; font-weight:900; }
+    .brand-logo { width:38px; height:38px; object-fit:contain; flex:0 0 auto; }
+    .brand span:last-child { color:#818181; font-size:12px; font-weight:500; letter-spacing:.09em; margin-left:1px; }
+    .crumb { flex:1; display:flex; align-items:center; gap:8px; min-width:0; color:var(--muted); font-size:13px; }
+    .crumb strong { color:var(--text); font-weight:560; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .top-actions { display:flex; gap:8px; align-items:center; }
+    .status { border:1px solid var(--line); color:var(--soft); padding:7px 10px; font-size:12px; white-space:nowrap; }
+    .status::before { content:""; display:inline-block; width:5px; height:5px; background:#deded8; border-radius:50%; margin-right:7px; box-shadow:0 0 0 3px #2f2f2f; }
+    .icon-btn, .btn { border:1px solid var(--line-strong); background:transparent; cursor:pointer; border-radius:var(--radius); transition:.18s ease; }
+    .icon-btn { width:35px; height:35px; display:grid; place-items:center; }
+    .icon-btn svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.8; }
+    .icon-btn:hover, .btn:hover { background:#242424; border-color:#6b6b6b; }
+    .workspace { min-height:0; display:grid; grid-template-columns:320px minmax(440px,1fr); }
+    .left, .right, .center { min-width:0; min-height:0; }
+    .left, .right { background:#0d0d0d; scrollbar-width:thin; scrollbar-color:#333 transparent; }
+    .left { border-right:1px solid var(--line); display:grid; grid-template-rows:minmax(280px,54%) minmax(250px,46%); overflow:hidden; }
+    .right { position:fixed; right:0; top:56px; bottom:0; width:min(390px,92vw); z-index:30; overflow:auto; border-left:1px solid var(--line); transform:translateX(105%); transition:transform .28s cubic-bezier(.22,.8,.22,1); box-shadow:-30px 0 80px #0000; }
+    .right.open { transform:translateX(0); box-shadow:-30px 0 80px #000b; }
+    .profile-toggle { display:grid !important; }
+    .drawer-backdrop { position:fixed; inset:56px 0 0; z-index:29; border:0; background:#0009; opacity:0; pointer-events:none; transition:.2s ease; }
+    .drawer-backdrop.open { opacity:1; pointer-events:auto; }
+    .pane-head { height:56px; padding:0 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; background:#0d0d0df2; backdrop-filter:blur(12px); }
+    .eyebrow { color:var(--muted); text-transform:uppercase; font-size:11px; font-weight:700; letter-spacing:.13em; }
+    .pane-head h2 { margin:3px 0 0; font-size:15px; font-weight:650; }
+    .count { min-width:27px; height:22px; padding:0 7px; display:grid; place-items:center; background:#242424; color:var(--soft); font-size:12px; }
+    .left-body, .right-body { padding:15px; }
+    .left-block { min-height:0; display:grid; grid-template-rows:auto 1fr; border-bottom:1px solid var(--line); }
+    .left-block:last-child { border-bottom:0; }
+    .left-block .pane-head { position:relative; height:52px; }
+    .left-scroll { min-height:0; overflow:auto; padding:12px; }
+    .history-tabs { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:11px; }
+    .history-tab { border:1px solid #303030; background:#121212; color:#777; padding:7px 8px; font-size:11px; cursor:pointer; }
+    .history-tab.active { background:#e9e9e4; border-color:#e9e9e4; color:#111; }
+    .history-view { display:none; }
+    .history-view.active { display:block; }
+    .folder-list, .question-list { display:grid; gap:6px; }
+    .folder, .question { width:100%; border:1px solid #282828; background:#111; color:inherit; text-align:left; cursor:pointer; transition:.15s ease; }
+    .folder:hover, .question:hover { border-color:#505050; background:#171717; }
+    .folder { display:grid; grid-template-columns:28px 1fr auto; align-items:center; gap:8px; padding:9px; }
+    .folder-icon { color:#aaa; font-size:16px; }
+    .folder b { font-size:12px; display:block; }
+    .folder span, .question span { color:#666; font-size:10px; }
+    .folder-count { color:#777; font-size:10px; }
+    .question { padding:9px 10px; }
+    .question b { display:block; font-size:12px; line-height:1.4; font-weight:560; margin-bottom:4px; }
+    .question.active { border-color:#777; background:#1b1b1b; }
+    .todo-compact .todo { padding:9px; }
+    .todo-compact .todo-bottom { margin-top:5px; }
+    .todo-compact { padding-bottom:16px; }
+    .progress { margin:2px 0 20px; }
+    .progress-meta { display:flex; justify-content:space-between; color:var(--soft); font-size:12px; margin-bottom:8px; }
+    .track { height:3px; background:#303030; overflow:hidden; }
+    .track > span { display:block; height:100%; background:#f1f1ec; width:38%; transition:width .25s ease; }
+    .section-row { display:flex; align-items:center; justify-content:space-between; margin:22px 0 9px; }
+    .section-row:first-of-type { margin-top:0; }
+    .section-title { font-size:12px; color:#c1c1bd; font-weight:650; }
+    .section-note { font-size:11px; color:#666; }
+    .todo-list { display:grid; gap:8px; }
+    .todo { position:relative; padding:12px 11px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); transition:.2s ease; }
+    .todo:hover { border-color:#484848; transform:translateY(-1px); }
+    .todo.done { opacity:.48; }
+    .todo.done .todo-title { text-decoration:line-through; }
+    .todo-top { display:flex; gap:9px; align-items:flex-start; }
+    .check { appearance:none; margin:2px 0 0; width:16px; height:16px; border:1px solid #777; background:#111; cursor:pointer; flex:0 0 auto; }
+    .check:checked { background:#eee; box-shadow:inset 0 0 0 3px #111; }
+    .todo-title { line-height:1.38; font-size:13px; font-weight:580; }
+    .todo-bottom { padding-left:25px; margin-top:9px; display:flex; align-items:center; justify-content:space-between; gap:6px; }
+    .date { font-size:11px; color:#7d7d7d; }
+    .date.urgent { color:#e1e1dc; }
+    .badge { border:1px solid #393939; color:#999; font-size:10px; padding:3px 5px; text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; }
+    .badge.soon { color:#f0f0eb; border-color:#6b6b6b; }
+    .semester { display:grid; grid-template-columns:repeat(4,1fr); gap:3px; padding-top:7px; }
+    .semester span { height:3px; background:#242424; }
+    .semester span.active { background:#e9e9e4; }
+    .btn { min-height:34px; padding:8px 11px; font-size:12px; font-weight:620; }
+    .btn.primary { color:#0c0c0c; background:#f3f3ee; border-color:#f3f3ee; }
+    .btn.primary:hover { background:#ccc; border-color:#ccc; }
+    .btn.ghost { color:#bcbcbc; }
+    .full { width:100%; }
+    .add-task { margin-top:12px; border-style:dashed; color:#999; }
+    .center { display:grid; grid-template-rows:auto 1fr auto; background:#0a0a0a; }
+    .chat-head { border-bottom:1px solid var(--line); padding:12px 22px 0; background:#0c0c0c; }
+    .chat-title-row { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; }
+    .chat-title-row h1 { font-size:17px; line-height:1.25; margin:0; letter-spacing:-.02em; font-weight:650; }
+    .chat-title-row p { margin:5px 0 0; color:#777; font-size:12px; }
+    .tabs { display:flex; gap:22px; margin-top:15px; }
+    .tab { border:0; border-bottom:2px solid transparent; padding:0 0 10px; background:none; color:#6f6f6f; font-size:13px; cursor:pointer; }
+    .tab.active { color:#eee; border-color:#eee; }
+    .chat-scroll { overflow:auto; scrollbar-width:thin; scrollbar-color:#333 transparent; }
+    .view { display:none; max-width:820px; margin:0 auto; padding:28px clamp(18px,4vw,44px) 40px; }
+    .view.active { display:block; }
+    .user-row { display:flex; justify-content:flex-end; margin-bottom:25px; }
+    .user-bubble { max-width:76%; padding:12px 14px; border:1px solid #383838; background:#181818; font-size:14px; line-height:1.65; }
+    .ai-label { display:flex; align-items:center; gap:9px; margin-bottom:12px; color:#8b8b8b; font-size:11px; text-transform:uppercase; letter-spacing:.12em; }
+    .ai-label::before { content:"AI"; display:grid; place-items:center; width:24px; height:24px; background:#ededE8; color:#111; font-weight:900; letter-spacing:-.06em; }
+    .answer { color:#d7d7d3; font-size:14px; line-height:1.75; }
+    .answer strong { color:#fafaf7; }
+    .answer p { margin:0 0 14px; }
+    .source-row { display:flex; flex-wrap:wrap; gap:6px; margin:18px 0 20px; }
+    .source { border:1px solid #333; color:#999; background:#121212; padding:6px 8px; font-size:11px; }
+    .source b { color:#ddd; margin-right:5px; }
+    .scenario-title { display:flex; align-items:end; justify-content:space-between; border-top:1px solid var(--line); padding-top:19px; margin-top:4px; }
+    .scenario-title h3 { margin:0; font-size:14px; }
+    .scenario-title span { color:#666; font-size:11px; }
+    .scenarios { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:11px; }
+    .scenario { background:#111; border:1px solid #303030; padding:13px; min-height:184px; display:flex; flex-direction:column; }
+    .scenario.featured { background:#eee; color:#111; border-color:#eee; }
+    .scenario-kicker { font-size:10px; color:#777; text-transform:uppercase; letter-spacing:.1em; }
+    .scenario.featured .scenario-kicker { color:#666; }
+    .scenario h4 { margin:8px 0 7px; font-size:14px; }
+    .scenario p { color:#888; font-size:11px; line-height:1.55; margin:0 0 12px; }
+    .scenario.featured p { color:#555; }
+    .scenario .btn { margin-top:auto; width:100%; }
+    .scenario.featured .btn { border-color:#111; }
+    .timeline { margin-top:22px; }
+    .timeline h3 { font-size:14px; margin:0 0 13px; }
+    .timeline-row { display:grid; grid-template-columns:60px 1fr; gap:14px; padding:11px 0; border-top:1px solid #252525; }
+    .timeline-row time { color:#777; font-size:11px; padding-top:2px; }
+    .timeline-row b { display:block; font-size:13px; margin-bottom:3px; }
+    .timeline-row span { color:#777; font-size:11px; }
+    .compare-grid { display:grid; grid-template-columns:repeat(3,1fr); border:1px solid #333; }
+    .compare-cell { padding:14px; border-right:1px solid #2d2d2d; border-bottom:1px solid #2d2d2d; font-size:12px; line-height:1.55; color:#aaa; }
+    .compare-cell:nth-child(3n) { border-right:0; }
+    .compare-cell.head { color:#eee; background:#151515; font-weight:700; }
+    .source-card { border:1px solid #303030; background:#111; margin-bottom:10px; padding:15px; }
+    .source-card h3 { margin:0 0 6px; font-size:14px; }
+    .source-card p { color:#828282; font-size:12px; line-height:1.6; margin:0; }
+    .source-card .meta { margin-top:12px; display:flex; justify-content:space-between; color:#666; font-size:11px; }
+    .composer-wrap { padding:12px clamp(16px,4vw,40px) 16px; background:linear-gradient(transparent,#0a0a0a 24%); }
+    .composer { max-width:820px; margin:0 auto; border:1px solid #3b3b3b; background:#111; box-shadow:0 12px 40px #000; }
+    .composer textarea { display:block; width:100%; resize:none; min-height:56px; max-height:120px; border:0; outline:0; color:#eaeae7; background:transparent; padding:14px 14px 8px; line-height:1.45; }
+    .composer textarea::placeholder { color:#646464; }
+    .composer-bottom { display:flex; justify-content:space-between; align-items:center; padding:7px 8px; }
+    .quick { display:flex; gap:6px; overflow:hidden; }
+    .quick button { white-space:nowrap; border:0; background:#1d1d1d; color:#777; font-size:10px; padding:6px 8px; cursor:pointer; }
+    .send { width:31px; height:31px; border:0; cursor:pointer; background:#eee; color:#111; font-size:17px; }
+    .profile-card { border:1px solid var(--line); background:#111; padding:14px; }
+    .avatar-row { display:flex; align-items:center; gap:11px; }
+    .avatar { width:40px; height:40px; background:#e8e8e3; color:#111; display:grid; place-items:center; font-weight:850; }
+    .profile-card h3 { margin:0; font-size:14px; }
+    .profile-card p { margin:4px 0 0; color:#777; font-size:11px; }
+    .tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:13px; }
+    .tag { background:#222; color:#a8a8a5; padding:5px 6px; font-size:10px; }
+    .study-summary { margin-top:14px; border-top:1px solid #2b2b2b; padding-top:12px; }
+    .study-total { display:flex; justify-content:space-between; align-items:end; margin-bottom:8px; }
+    .study-total b { font-size:22px; line-height:1; }
+    .study-total span { color:#777; font-size:10px; }
+    .credit-track { height:4px; background:#292929; margin-bottom:12px; }
+    .credit-track span { display:block; height:100%; width:72%; background:#eee; }
+    .credit-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+    .credit-stat { background:#191919; padding:8px; }
+    .credit-stat b { display:block; font-size:15px; }
+    .credit-stat span { color:#707070; font-size:9px; }
+    .file-list { display:grid; gap:7px; }
+    .file { display:grid; grid-template-columns:31px 1fr auto; align-items:center; gap:9px; border:1px solid #292929; background:#111; padding:9px; }
+    .file-icon { width:31px; height:35px; border:1px solid #444; display:grid; place-items:center; color:#999; font-size:9px; }
+    .file b { font-size:12px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .file span { color:#666; font-size:10px; }
+    .file-status { width:7px; height:7px; border-radius:50%; background:#777; }
+    .file-status.ready { background:#ddd; }
+    .goal { border-left:2px solid #555; padding:2px 0 2px 10px; margin-bottom:12px; }
+    .goal b { font-size:12px; display:block; }
+    .goal span { color:#777; font-size:10px; line-height:1.4; }
+    .notice { margin-top:19px; padding:11px; border:1px solid #292929; color:#737373; font-size:10px; line-height:1.55; }
+    .mobile-nav { display:none; }
+    dialog { width:min(420px,calc(100% - 30px)); padding:0; border:1px solid #444; background:#111; color:#eee; box-shadow:0 30px 90px #000; }
+    dialog::backdrop { background:#000b; backdrop-filter:blur(3px); }
+    .dialog-head { padding:16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; }
+    .dialog-head h3 { margin:0; font-size:15px; }
+    .dialog-body { padding:16px; }
+    .field { display:grid; gap:6px; margin-bottom:13px; }
+    .field label { color:#888; font-size:11px; }
+    .field input, .field select { width:100%; background:#171717; border:1px solid #383838; color:#eee; padding:10px; outline:0; }
+    .dialog-actions { padding:13px 16px; border-top:1px solid #333; display:flex; justify-content:flex-end; gap:8px; }
+    .toast { position:fixed; right:22px; bottom:22px; z-index:20; background:#eee; color:#111; padding:11px 14px; font-size:12px; transform:translateY(20px); opacity:0; pointer-events:none; transition:.25s ease; box-shadow:0 12px 40px #000; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .typing { display:flex; gap:4px; align-items:center; height:28px; }
+    .typing span { width:5px; height:5px; background:#777; animation:pulse 1s infinite alternate; }
+    .typing span:nth-child(2){animation-delay:.18s}.typing span:nth-child(3){animation-delay:.36s}
+    .login-screen { min-height:100%; display:grid; grid-template-columns:minmax(320px,1.08fr) minmax(360px,.92fr); background:#0a0a0a; }
+    .login-brand { position:relative; padding:clamp(28px,6vw,84px); display:flex; flex-direction:column; justify-content:space-between; overflow:hidden; border-right:1px solid #292929; }
+    .login-brand::after { content:"N"; position:absolute; right:-5vw; bottom:-14vw; color:#101010; font-size:44vw; line-height:.8; font-weight:900; letter-spacing:-.12em; pointer-events:none; }
+    .login-logo { position:relative; z-index:1; display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:-.03em; }
+    .login-copy { position:relative; z-index:1; max-width:670px; }
+    .login-copy .eyebrow { margin-bottom:18px; }
+    .login-copy h1 { margin:0; max-width:650px; font-size:clamp(42px,6vw,86px); line-height:.93; letter-spacing:-.065em; }
+    .login-copy p { max-width:510px; margin:24px 0 0; color:#8c8c8c; font-size:15px; line-height:1.7; }
+    .login-foot { position:relative; z-index:1; display:flex; gap:18px; color:#5f5f5f; font-size:11px; }
+    .login-panel { display:grid; place-items:center; padding:28px; background:#0e0e0e; }
+    .login-card { width:min(410px,100%); }
+    .login-card h2 { font-size:24px; margin:0 0 8px; letter-spacing:-.03em; }
+    .login-card > p { color:#777; font-size:13px; line-height:1.55; margin:0 0 26px; }
+    .login-field { display:grid; gap:7px; margin-bottom:14px; }
+    .login-field label { color:#8a8a8a; font-size:11px; }
+    .login-field input { width:100%; min-height:46px; border:1px solid #353535; background:#141414; color:#eee; padding:0 12px; outline:0; }
+    .login-field input:focus { border-color:#777; }
+    .login-submit { width:100%; min-height:46px; margin-top:6px; border:0; background:#f0f0eb; color:#111; font-weight:720; cursor:pointer; }
+    .login-submit:hover { background:#d5d5d0; }
+    .login-divider { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; margin:20px 0; color:#555; font-size:10px; }
+    .login-divider::before,.login-divider::after{content:"";height:1px;background:#292929}
+    .demo-login { width:100%; min-height:44px; border:1px solid #444; background:transparent; color:#ddd; cursor:pointer; }
+    .login-note { margin-top:16px; color:#5e5e5e; font-size:10px; line-height:1.55; }
+    .product-nav { display:flex; align-self:stretch; align-items:stretch; gap:2px; margin-left:18px; overflow-x:auto; scrollbar-width:none; }
+    .product-nav::-webkit-scrollbar { display:none; }
+    .product-nav button { position:relative; min-width:max-content; padding:0 13px; border:0; background:transparent; color:#777; cursor:pointer; font-size:12px; }
+    .product-nav button::after { content:""; position:absolute; left:13px; right:13px; bottom:0; height:2px; background:transparent; }
+    .product-nav button:hover { color:#ccc; }
+    .product-nav button.active { color:#f4f4f0; }
+    .product-nav button.active::after { background:#f4f4f0; }
+    .feature-page { display:none; min-height:0; overflow:hidden; background:#0a0a0a; }
+    .feature-page.active { display:block; position:fixed; z-index:10; inset:56px 0 0; }
+    .page-hidden { display:none !important; }
+    .feature-shell { height:100%; display:grid; grid-template-rows:auto 1fr; min-height:0; }
+    .feature-head { min-height:78px; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:14px 24px; border-bottom:1px solid var(--line); background:#0c0c0c; }
+    .feature-head h1 { margin:3px 0 0; font-size:21px; letter-spacing:-.035em; }
+    .feature-head p { margin:5px 0 0; color:#747474; font-size:11px; }
+    .feature-actions { display:flex; gap:8px; align-items:center; }
+    .mobile-create { display:none; }
+    .feature-body { min-height:0; overflow:auto; }
+    .filter-input, .filter-select, .editor-input, .editor-textarea { width:100%; border:1px solid #343434; background:#111; color:#eee; outline:0; padding:10px 11px; border-radius:0; }
+    .filter-input:focus, .filter-select:focus, .editor-input:focus, .editor-textarea:focus { border-color:#777; }
+    .filter-select { appearance:none; background-image:linear-gradient(45deg,transparent 50%,#777 50%),linear-gradient(135deg,#777 50%,transparent 50%); background-position:calc(100% - 15px) 50%,calc(100% - 10px) 50%; background-size:5px 5px; background-repeat:no-repeat; }
+
+    /* Calendar */
+    .calendar-body { display:grid; grid-template-columns:230px 1fr; height:100%; min-height:0; }
+    .calendar-side { border-right:1px solid var(--line); background:#0d0d0d; padding:18px; overflow:auto; }
+    .calendar-side .btn { margin-bottom:22px; }
+    .calendar-mini-title { color:#e5e5e0; font-size:13px; margin-bottom:10px; }
+    .calendar-legend { display:grid; gap:9px; margin-top:8px; }
+    .calendar-legend label { display:flex; align-items:center; gap:9px; color:#8a8a8a; font-size:11px; }
+    .legend-dot { width:8px; height:8px; background:#eee; }
+    .legend-dot.gray { background:#737373; }
+    .legend-dot.dark { background:#353535; border:1px solid #777; }
+    .calendar-note { margin-top:24px; padding-top:15px; border-top:1px solid #292929; color:#626262; font-size:10px; line-height:1.65; }
+    .calendar-main { min-width:0; min-height:0; display:grid; grid-template-rows:38px 1fr; padding:0 18px 18px; overflow:auto; }
+    .week-row, .calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(110px,1fr)); }
+    .week-row { position:sticky; top:0; z-index:3; background:#0a0a0a; }
+    .week-row span { display:flex; align-items:center; padding-left:9px; border-left:1px solid #252525; color:#666; font-size:10px; text-transform:uppercase; letter-spacing:.08em; }
+    .calendar-grid { grid-auto-rows:minmax(112px,1fr); border-top:1px solid #2a2a2a; border-bottom:1px solid #2a2a2a; }
+    .day-cell { min-height:112px; border-left:1px solid #2a2a2a; border-bottom:1px solid #2a2a2a; background:#0c0c0c; padding:7px; cursor:pointer; transition:.15s; overflow:hidden; }
+    .day-cell:nth-child(7n) { border-right:1px solid #2a2a2a; }
+    .day-cell:hover { background:#121212; }
+    .day-cell.outside { color:#3d3d3d; background:#090909; }
+    .day-number { width:24px; height:24px; display:grid; place-items:center; color:#969696; font-size:11px; margin-bottom:5px; }
+    .day-cell.today .day-number { background:#eee; color:#111; font-weight:800; }
+    .cal-event { width:100%; margin-top:4px; padding:5px 6px; background:#e8e8e3; color:#111; font-size:9px; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cal-event.shared { background:#5d5d5d; color:#fff; }
+    .cal-event.career { background:#232323; color:#d8d8d4; border-left:2px solid #ddd; }
+
+    /* Talent directory */
+    .directory-body { display:grid; grid-template-columns:240px 1fr; height:100%; min-height:0; }
+    .directory-filters, .column-categories { padding:20px 18px; border-right:1px solid var(--line); background:#0d0d0d; overflow:auto; }
+    .filter-group { margin-bottom:22px; }
+    .filter-group h3 { margin:0 0 9px; color:#8d8d8d; font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
+    .filter-options { display:grid; gap:7px; }
+    .filter-check { display:flex; align-items:center; gap:8px; color:#aaa; font-size:11px; cursor:pointer; }
+    .filter-check input { appearance:none; width:13px; height:13px; margin:0; border:1px solid #555; background:#111; }
+    .filter-check input:checked { background:#eee; box-shadow:inset 0 0 0 3px #111; }
+    .directory-main { min-width:0; overflow:auto; padding:22px; }
+    .directory-toolbar { display:grid; grid-template-columns:minmax(220px,1fr) auto auto; gap:8px; margin-bottom:18px; }
+    .talent-summary { display:flex; justify-content:space-between; margin-bottom:10px; color:#6e6e6e; font-size:10px; }
+    .talent-grid { display:grid; grid-template-columns:repeat(3,minmax(230px,1fr)); gap:10px; }
+    .talent-card { min-height:238px; display:flex; flex-direction:column; border:1px solid #303030; background:#101010; padding:16px; }
+    .talent-card:hover { border-color:#585858; }
+    .talent-person { display:flex; gap:11px; align-items:center; }
+    .talent-name-row { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+    .reply-status { display:inline-flex; align-items:center; min-height:19px; padding:2px 6px; border:1px solid #555; color:#d6d6d1; font-size:8px; font-weight:700; letter-spacing:.04em; white-space:nowrap; }
+    .reply-status.later { color:#777; border-color:#333; }
+    .talent-avatar, .post-avatar { flex:0 0 auto; display:grid; place-items:center; background:#e9e9e4; color:#111; font-weight:850; }
+    .talent-avatar { width:46px; height:46px; font-size:13px; }
+    .talent-avatar img { width:100%; height:100%; object-fit:cover; }
+    .talent-card h3 { margin:0 0 4px; font-size:14px; }
+    .talent-meta { color:#777; font-size:10px; line-height:1.45; }
+    .talent-bio { margin:13px 0 9px; color:#979797; font-size:11px; line-height:1.55; }
+    .talent-tags { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:14px; }
+    .talent-tags span { border:1px solid #343434; padding:4px 6px; color:#aaa; font-size:9px; }
+    .talent-card-actions { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:auto; }
+    .talent-card-actions .btn:first-child { grid-column:1/-1; }
+    .btn.selected { background:#eee; color:#111; border-color:#eee; }
+
+    /* Editorial */
+    .columns-body { display:grid; grid-template-columns:220px 1fr; height:100%; min-height:0; }
+    .category-list { display:grid; gap:4px; }
+    .category-button { width:100%; display:flex; justify-content:space-between; border:1px solid transparent; background:transparent; color:#7e7e7e; padding:10px; cursor:pointer; text-align:left; font-size:11px; }
+    .category-button:hover { color:#ddd; background:#151515; }
+    .category-button.active { color:#111; background:#eee; }
+    .columns-main { overflow:auto; padding:22px; }
+    .post-composer { border:1px solid #333; background:#101010; padding:15px; margin-bottom:14px; }
+    .post-composer-top { display:grid; grid-template-columns:34px 1fr; gap:10px; }
+    .post-avatar { width:34px; height:34px; font-size:10px; }
+    .post-composer textarea { width:100%; min-height:88px; resize:vertical; border:0; outline:0; background:transparent; color:#eee; line-height:1.6; }
+    .post-composer-bottom { display:flex; justify-content:space-between; align-items:center; padding-top:10px; border-top:1px solid #292929; }
+    .post-composer-bottom span { color:#616161; font-size:10px; }
+    .post-feed { display:grid; grid-template-columns:repeat(2,minmax(260px,1fr)); gap:10px; }
+    .post-card { border:1px solid #2e2e2e; background:#0f0f0f; padding:16px; min-height:190px; display:flex; flex-direction:column; }
+    .post-author { display:flex; align-items:center; gap:9px; }
+    .post-author b { display:block; font-size:12px; }
+    .post-author span { color:#666; font-size:9px; }
+    .post-title { margin:16px 0 7px; font-size:15px; line-height:1.35; }
+    .post-copy { color:#929292; font-size:11px; line-height:1.65; margin:0 0 16px; }
+    .post-actions { margin-top:auto; display:flex; gap:7px; padding-top:10px; border-top:1px solid #292929; }
+    .post-actions button { border:0; background:transparent; color:#727272; cursor:pointer; font-size:10px; padding:4px 0; margin-right:10px; }
+    .post-actions button.active { color:#eee; }
+
+    /* Resume studio */
+    .resume-body { display:grid; grid-template-columns:minmax(480px,1fr) minmax(340px,42%); height:100%; min-height:0; }
+    .resume-editor { overflow:auto; padding:22px; border-right:1px solid var(--line); }
+    .resume-start-row { display:grid; grid-template-columns:minmax(0,1fr) 180px; gap:9px; margin-bottom:15px; }
+    .resume-upload { border:1px dashed #424242; background:#0f0f0f; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:12px; min-height:82px; }
+    .resume-upload h3 { margin:0 0 5px; font-size:13px; }
+    .resume-upload p { margin:0; color:#666; font-size:10px; }
+    .resume-add-card { border:1px dashed #555; background:#111; color:#ddd; min-height:82px; cursor:pointer; display:grid; place-items:center; align-content:center; gap:5px; font-weight:700; }
+    .resume-add-card span { font-size:22px; line-height:1; }
+    .resume-add-card small { color:#777; font-size:9px; font-weight:500; }
+    .resume-add-card:hover { background:#1a1a1a; border-color:#888; }
+    .resume-section { border:1px solid #2f2f2f; background:#0e0e0e; margin-bottom:9px; }
+    .resume-section-head { display:grid; grid-template-columns:1fr auto auto auto; gap:7px; align-items:center; padding:9px; border-bottom:1px solid #292929; }
+    .resume-section-head input { border:0; background:transparent; color:#eee; font-weight:700; outline:0; }
+    .resume-section-add { min-height:30px; padding:5px 9px; }
+    .resume-entry-editor { padding:11px; border-top:1px solid #272727; }
+    .resume-entry-editor:first-of-type { border-top:0; }
+    .resume-entry-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; color:#777; font-size:9px; letter-spacing:.08em; text-transform:uppercase; }
+    .resume-entry-head button { border:0; background:transparent; color:#777; cursor:pointer; padding:3px 5px; }
+    .resume-entry-head button:hover { color:#eee; }
+    .resume-fields { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+    .resume-fields .wide { grid-column:1/-1; }
+    .resume-fields label { display:grid; gap:5px; color:#686868; font-size:9px; }
+    .resume-fields input, .resume-fields textarea { width:100%; border:1px solid #303030; background:#141414; color:#ddd; padding:8px; outline:0; font-size:11px; }
+    .resume-fields textarea { min-height:68px; resize:vertical; line-height:1.5; }
+    .profile-fields { padding:11px; }
+    .resume-preview-pane { overflow:auto; background:#151515; padding:20px; }
+    .preview-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .preview-toolbar span { color:#777; font-size:10px; }
+    .preview-actions { display:flex; gap:6px; }
+    .resume-paper { width:min(100%,680px); min-height:962px; margin:0 auto; background:#fff; color:#111; padding:35px 34px 38px; box-shadow:0 18px 60px #0009; font-family:"Times New Roman",Times,serif; }
+    .paper-profile { text-align:center; font-family:"Times New Roman",Times,serif; font-size:12pt; font-weight:700; line-height:1.25; }
+    .resume-paper h1 { margin:0 0 2px; font-family:"Times New Roman",Times,serif; font-size:12pt; font-weight:700; letter-spacing:0; }
+    .resume-paper .paper-location, .resume-paper .contact { color:#111; font-family:"Times New Roman",Times,serif; font-size:12pt; font-weight:700; margin:0; }
+    .paper-section { margin-top:15px; break-inside:avoid; }
+    .paper-section h2 { font-family:"Times New Roman",Times,serif; font-size:12pt; font-weight:700; letter-spacing:0; text-transform:uppercase; border-bottom:1.5px solid #111; padding:0 0 2px; margin:0 0 9px; }
+    .paper-entry { margin-bottom:9px; break-inside:avoid; font-size:11pt; line-height:1.18; }
+    .paper-entry-top { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; font-size:11pt; }
+    .paper-entry-top b { font-size:11pt; }
+    .paper-entry-top time { flex:0 0 auto; white-space:nowrap; }
+    .paper-role { margin-top:2px; font-weight:700; font-style:italic; }
+    .paper-entry ul { margin:4px 0 0; padding-left:17px; }
+    .paper-entry li { margin:0 0 2px; padding-left:2px; font-size:11pt; line-height:1.2; }
+    .paper-skill-row { margin:3px 0 0; font-size:11pt; line-height:1.25; }
+    .paper-skill-row b { margin-right:4px; }
+    .analyzing { animation:analyze 1s infinite alternate; }
+    @keyframes analyze { to { opacity:.42; } }
+
+    /* Settings, theme and profile editor */
+    .settings-options { display:grid; gap:18px; }
+    .settings-group > span { display:block; margin-bottom:8px; color:#888; font-size:10px; text-transform:uppercase; letter-spacing:.1em; }
+    .segmented { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+    .segmented button { min-height:40px; border:1px solid #3a3a3a; background:#151515; color:#888; cursor:pointer; }
+    .segmented button.active { background:#eee; color:#111; border-color:#eee; font-weight:700; }
+    .avatar-upload { display:grid; grid-template-columns:58px 1fr; gap:12px; align-items:center; margin-bottom:14px; }
+    .avatar-preview { width:58px; height:58px; display:grid; place-items:center; overflow:hidden; background:#e9e9e4; color:#111; font-weight:850; }
+    .avatar-preview img { width:100%; height:100%; object-fit:cover; }
+    .avatar-upload p { margin:5px 0 0; color:#666; font-size:9px; line-height:1.5; }
+
+    body.theme-light { --bg:#f4f4f1; --panel:#fff; --panel-2:#f3f3ef; --line:#d7d7d2; --line-strong:#bcbcb6; --text:#111; --muted:#6d6d69; --soft:#343432; --white:#111; --black:#fff; background:#f4f4f1; color:#111; }
+    body.theme-light .topbar, body.theme-light .left, body.theme-light .right, body.theme-light .center, body.theme-light .pane-head, body.theme-light .chat-head, body.theme-light .feature-head, body.theme-light .calendar-side, body.theme-light .directory-filters, body.theme-light .column-categories, body.theme-light .mobile-nav, body.theme-light .product-nav { background:#f8f8f5; }
+    body.theme-light .feature-page, body.theme-light .composer-wrap, body.theme-light .week-row { background:#f4f4f1; }
+    body.theme-light .profile-card, body.theme-light .folder, body.theme-light .question, body.theme-light .todo, body.theme-light .scenario, body.theme-light .source-card, body.theme-light .post-composer, body.theme-light .post-card, body.theme-light .talent-card, body.theme-light .resume-section, body.theme-light .resume-upload, body.theme-light .resume-add-card, body.theme-light .composer, body.theme-light dialog { background:#fff; color:#111; }
+    body.theme-light .filter-input, body.theme-light .filter-select, body.theme-light .editor-input, body.theme-light .editor-textarea, body.theme-light .field input, body.theme-light .field select, body.theme-light .resume-fields input, body.theme-light .resume-fields textarea, body.theme-light .login-field input { background:#fff; color:#111; border-color:#c9c9c4; }
+    body.theme-light .resume-section-head input { color:#111; }
+    body.theme-light .icon-btn:hover, body.theme-light .btn:hover, body.theme-light .folder:hover, body.theme-light .question:hover { background:#e7e7e2; }
+    body.theme-light .btn.primary, body.theme-light .history-tab.active, body.theme-light .category-button.active, body.theme-light .segmented button.active { background:#111; color:#fff; border-color:#111; }
+    body.theme-light .btn.ghost, body.theme-light .product-nav button.active, body.theme-light .tab.active, body.theme-light .answer strong, body.theme-light .talent-card h3 { color:#111; }
+    body.theme-light .brand-mark { background:#111; color:#fff; }
+    body.theme-light .day-cell { background:#fff; }
+    body.theme-light .day-cell:hover, body.theme-light .credit-stat, body.theme-light .tag, body.theme-light .quick button { background:#ecece8; color:#444; }
+    body.theme-light .check, body.theme-light .filter-check input { background:#fff; }
+    body.theme-light .check:checked, body.theme-light .filter-check input:checked { background:#111; box-shadow:inset 0 0 0 3px #fff; }
+    body.theme-light .reply-status { color:#222; border-color:#aaa; }
+    body.theme-light .drawer-backdrop { background:#0004; }
+
+    @media print {
+      body * { visibility:hidden !important; }
+      .resume-paper, .resume-paper * { visibility:visible !important; }
+      .resume-paper { position:absolute; inset:0; width:210mm; min-height:297mm; margin:0; padding:12mm 11mm; box-shadow:none; }
+      @page { size:A4; margin:0; }
+    }
+    @keyframes pulse { to { opacity:.2; transform:translateY(-3px); } }
+    @media (max-width:1100px) {
+      .workspace { grid-template-columns:290px 1fr; }
+      .brand { width:180px; }
+      .product-nav { flex:1; margin-left:0; }
+      .crumb, .status { display:none; }
+      .talent-grid { grid-template-columns:repeat(2,minmax(230px,1fr)); }
+    }
+    @media (max-width:950px) and (min-width:761px) {
+      .calendar-body { grid-template-columns:1fr; }
+      .calendar-side { display:none; }
+      .mobile-create { display:inline-flex; }
+      .calendar-main { padding-left:10px; padding-right:10px; }
+      .week-row, .calendar-grid { grid-template-columns:repeat(7,minmax(92px,1fr)); }
+      .resume-body { grid-template-columns:minmax(410px,1fr) minmax(310px,42%); }
+    }
+    @media (max-width:760px) {
+      body { overflow:hidden; }
+      .topbar { padding:0 12px; }
+      .brand { width:auto; flex:1; }
+      .brand span:last-child, .crumb, .status { display:none; }
+      .product-nav { position:fixed; top:56px; left:0; right:0; height:46px; z-index:25; margin:0; background:#0d0d0d; border-bottom:1px solid #292929; padding:0 8px; }
+      .workspace, .feature-page { margin-top:46px; height:calc(100% - 46px); }
+      .feature-page.active { top:102px; bottom:0; height:auto; margin-top:0; }
+      .top-actions .profile-toggle { display:grid !important; width:36px; padding:0; font-size:0; }
+      .top-actions .profile-toggle::before { content:"YC"; font-size:9px; font-weight:800; }
+      .workspace { display:block; position:relative; padding-bottom:54px; }
+      .left, .center { position:absolute; inset:0 0 54px; display:none; }
+      .left.mobile-active, .center.mobile-active { display:grid; }
+      .left.mobile-active { display:grid; border-right:0; }
+      .left-body { max-width:520px; margin:0 auto; }
+      .right { top:102px; bottom:0; width:min(330px,90vw); }
+      .mobile-nav { display:grid; grid-template-columns:repeat(3,1fr); position:fixed; bottom:0; left:0; right:0; height:54px; z-index:15; border-top:1px solid #333; background:#0d0d0d; }
+      .mobile-nav button { border:0; border-right:1px solid #262626; color:#777; background:transparent; font-size:11px; }
+      .mobile-nav button.active { color:#eee; background:#171717; }
+      .scenarios { grid-template-columns:1fr; }
+      .scenario { min-height:auto; }
+      .scenario .btn { margin-top:8px; }
+      .view { padding-top:20px; }
+      .chat-head { padding-left:16px; padding-right:16px; }
+      .quick button:nth-child(n+2) { display:none; }
+      .login-screen { grid-template-columns:1fr; }
+      .login-brand { min-height:38vh; padding:28px; border-right:0; border-bottom:1px solid #292929; }
+      .login-copy h1 { font-size:44px; max-width:360px; }
+      .login-copy p, .login-foot { display:none; }
+      .login-panel { align-items:start; padding:30px 22px; }
+      .calendar-body, .directory-body, .columns-body, .resume-body { grid-template-columns:1fr; }
+      .calendar-side, .directory-filters, .column-categories { display:none; }
+      .feature-head { min-height:72px; padding:12px 14px; }
+      .feature-head p { display:none; }
+      .feature-actions .btn.ghost { display:none; }
+      .resume-upload .feature-actions .btn.ghost { display:inline-flex; }
+      .mobile-create { display:inline-flex; }
+      .calendar-main { padding:0 0 12px; overflow:auto; }
+      .week-row, .calendar-grid { min-width:760px; }
+      .talent-grid, .post-feed { grid-template-columns:1fr; }
+      .directory-main, .columns-main, .resume-editor, .resume-preview-pane { padding:14px; }
+      .directory-toolbar { grid-template-columns:1fr auto; }
+      .directory-toolbar .btn:last-child { display:none; }
+      .resume-body { display:block; overflow:auto; }
+      .resume-editor, .resume-preview-pane { overflow:visible; border:0; }
+      .resume-fields { grid-template-columns:1fr; }
+      .resume-fields .wide { grid-column:auto; }
+      .resume-start-row { grid-template-columns:1fr; }
+      .resume-add-card { min-height:64px; }
+      .resume-section-head { grid-template-columns:1fr auto auto; }
+      .resume-section-add { grid-column:1/-1; grid-row:2; }
+      .resume-paper { min-height:720px; padding:32px 27px; }
+    }
+  </style>
+</head>
+<body>
+  <section class="login-screen" id="login-screen" aria-label="登入 Next@NTU">
+    <div class="login-brand">
+      <div class="login-logo"><img class="brand-logo" src="assets/next-at-ntu-logo.png" alt="Next@NTU logo"><span>Next@NTU</span><span class="eyebrow mono">BETA</span></div>
+      <div class="login-copy">
+        <div class="eyebrow mono">YOUR UNIVERSITY, NAVIGATED.</div>
+        <h1>把四年，走成自己的路。</h1>
+        <p>從選課、社團、實習到研究所，讓 AI Coach 把散落的資訊整理成下一步，並記得你一路做過的選擇。</p>
+      </div>
+      <div class="login-foot mono"><span>NTU STUDENTS ONLY · CONCEPT</span><span>TAIPEI / 2026</span></div>
+    </div>
+    <div class="login-panel">
+      <form class="login-card" id="login-form">
+        <h2>登入你的生涯工作區</h2>
+        <p>目前為互動原型。你輸入的內容只會留在這個瀏覽器，不會傳送或建立帳號。</p>
+        <div class="login-field"><label for="login-email">臺大 Email</label><input id="login-email" type="email" autocomplete="email" placeholder="b12xxxxxx@ntu.edu.tw" /></div>
+        <div class="login-field"><label for="login-password">密碼</label><input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••" /></div>
+        <button class="login-submit" type="submit">登入工作區</button>
+        <div class="login-divider">或</div>
+        <button class="demo-login" id="demo-login" type="button">使用示範帳號體驗</button>
+        <div class="login-note">Prototype only — 尚未連接臺大帳號、資料庫或任何身分驗證服務。</div>
+      </form>
+    </div>
+  </section>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><img class="brand-logo" src="assets/next-at-ntu-logo.png" alt="Next@NTU logo"><div>Next@NTU</div><span class="mono">BETA</span></div>
+      <nav class="product-nav" aria-label="主要功能">
+        <button class="active" data-page="coach">AI Coach</button>
+        <button data-page="calendar">日曆</button>
+        <button data-page="columns">專欄</button>
+        <button data-page="talent">人才庫</button>
+        <button data-page="resume">修履歷</button>
+      </nav>
+      <div class="crumb"><span>工作區</span><span>/</span><strong>大三實習 × 研究所雙軌規劃</strong></div>
+      <div class="top-actions">
+        <div class="status mono">資料更新 2 小時前</div>
+        <button class="btn ghost profile-toggle" aria-label="開啟個人檔案">YC　個人檔案</button>
+        <button class="icon-btn" id="open-settings" aria-label="設定" title="設定"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.13.37.35.71.64.98.3.27.68.42 1.08.42H21v4h-.1a1.7 1.7 0 0 0-1.5.6Z"></path></svg></button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="left mobile-active" data-mobile-panel="plan">
+        <section class="left-block history-block">
+          <div class="pane-head">
+            <div><div class="eyebrow mono">MEMORY</div><h2>提問紀錄</h2></div>
+            <button class="icon-btn" id="new-question" aria-label="新增問題">＋</button>
+          </div>
+          <div class="left-scroll">
+            <div class="history-tabs" role="tablist">
+              <button class="history-tab active" data-history="folders">資料夾</button>
+              <button class="history-tab" data-history="questions">所有問題</button>
+            </div>
+            <div class="history-view active" id="history-folders">
+              <div class="folder-list">
+                <button class="folder"><span class="folder-icon">⌑</span><span><b>大一 · 探索</b><span>選課、學習方法、校園資源</span></span><i class="folder-count mono">08</i></button>
+                <button class="folder"><span class="folder-icon">⌑</span><span><b>大二 · 延伸</b><span>社團、學程、專題方向</span></span><i class="folder-count mono">11</i></button>
+                <button class="folder"><span class="folder-icon">⌑</span><span><b>大三 · 聚焦</b><span>實習、研究所、coffee chat</span></span><i class="folder-count mono">14</i></button>
+                <button class="folder"><span class="folder-icon">⌑</span><span><b>大四 · 轉換</b><span>求職、畢業、職涯選擇</span></span><i class="folder-count mono">03</i></button>
+              </div>
+            </div>
+            <div class="history-view" id="history-questions">
+              <div class="question-list">
+                <button class="question active"><b>實習與研究所要怎麼雙軌準備？</b><span>今天 · 大三</span></button>
+                <button class="question"><b>資料分析實習最近有哪些機會？</b><span>昨天 · 大三</span></button>
+                <button class="question"><b>該怎麼邀請學長姊 coffee chat？</b><span>10/02 · 大三</span></button>
+                <button class="question"><b>資管系選課如何安排比較彈性？</b><span>09/21 · 大二</span></button>
+                <button class="question"><b>跨領域學程有哪些選項？</b><span>09/10 · 大二</span></button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="left-block todo-block">
+          <div class="pane-head">
+            <div><div class="eyebrow mono">CAREER TO DO</div><h2>生涯待辦</h2></div>
+            <div class="count" id="task-count">5</div>
+          </div>
+          <div class="left-scroll todo-compact">
+            <div class="progress">
+              <div class="progress-meta"><span>本學期進度</span><strong id="progress-label">3 / 8</strong></div>
+              <div class="track"><span id="progress-bar"></span></div>
+            </div>
+            <div class="todo-list" id="urgent-list">
+              <article class="todo" data-id="cv"><div class="todo-top"><input class="check" type="checkbox" aria-label="完成英文履歷初稿"><div class="todo-title">完成英文履歷初稿</div></div><div class="todo-bottom"><span class="date urgent">10/12 · 6 天</span><span class="badge soon">履歷</span></div></article>
+              <article class="todo" data-id="tsmc"><div class="todo-top"><input class="check" type="checkbox" aria-label="投遞台積電暑期實習"><div class="todo-title">投遞台積電暑期實習</div></div><div class="todo-bottom"><span class="date urgent">10/18 · 12 天</span><span class="badge soon">實習</span></div></article>
+            </div>
+            <div class="section-row"><div class="section-title">接下來</div><div class="section-note">3 件</div></div>
+            <div class="todo-list" id="active-list">
+              <article class="todo" data-id="prof"><div class="todo-top"><input class="check" type="checkbox" aria-label="整理三位教授研究方向"><div class="todo-title">整理 3 位教授的研究方向</div></div><div class="todo-bottom"><span class="date">10/25</span><span class="badge">研究所</span></div></article>
+              <article class="todo" data-id="coffee"><div class="todo-top"><input class="check" type="checkbox" aria-label="約學長姐 coffee chat"><div class="todo-title">約 1 位學長姊 coffee chat</div></div><div class="todo-bottom"><span class="date">10/30</span><span class="badge">人脈</span></div></article>
+              <article class="todo done" data-id="club"><div class="todo-top"><input class="check" type="checkbox" checked aria-label="參加 DSA 社課說明會"><div class="todo-title">參加 DSA 社課說明會</div></div><div class="todo-bottom"><span class="date">已完成</span><span class="badge">社團</span></div></article>
+            </div>
+            <button class="btn ghost full add-task" id="add-task">＋ 新增待辦</button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="center" data-mobile-panel="coach">
+        <div class="chat-head">
+          <div class="chat-title-row">
+            <div><h1>大三實習 × 研究所雙軌規劃</h1><p>依你的背景、截止日與公開資料即時整理</p></div>
+            <button class="btn ghost" id="new-plan">新規劃</button>
+          </div>
+          <nav class="tabs" aria-label="內容分頁">
+            <button class="tab active" data-view="chat">AI 對話</button>
+            <button class="tab" data-view="compare">方案比較</button>
+            <button class="tab" data-view="sources">資料來源 <span class="mono">12</span></button>
+          </nav>
+        </div>
+
+        <div class="chat-scroll" id="chat-scroll">
+          <div class="view active" id="view-chat">
+            <div class="user-row"><div class="user-bubble">我是資管系大三，想找資料分析實習，但也在考慮申請台大資管所。可以幫我規劃接下來半年嗎？</div></div>
+            <div class="ai-label mono">PATH COACH · ANALYZED 12 SOURCES</div>
+            <div class="answer">
+              <p>可以。依你的背景，我會建議先走<strong>「實習優先、研究所選項保留」</strong>：兩條路前 8 週需要的準備高度重疊，先補齊履歷、專題證據與推薦人關係，再在 12 月依結果決定比重。</p>
+              <p>你目前最大的槓桿不是再修更多課，而是把課堂能力變成可被看見的成果：一份 2 頁內的分析專題、可讀的 GitHub README，以及能說清楚問題與決策的履歷。</p>
+            </div>
+            <div class="source-row">
+              <span class="source"><b>01</b>臺大教務處</span><span class="source"><b>02</b>資管所招生簡章</span><span class="source"><b>03</b>NTU Career</span><span class="source"><b>+9</b>公開來源</span>
+            </div>
+            <div class="scenario-title"><h3>三條可行路線</h3><span>已依你的時間與偏好排序</span></div>
+            <div class="scenarios">
+              <article class="scenario featured">
+                <div class="scenario-kicker mono">BEST FIT · 86%</div><h4>雙軌並行</h4><p>先共用準備，12 月再根據實習面試與研究興趣分流。</p>
+                <button class="btn" data-add-plan="雙軌準備：完成作品集與推薦人清單">加入我的計畫</button>
+              </article>
+              <article class="scenario">
+                <div class="scenario-kicker mono">SCENARIO B</div><h4>實習優先</h4><p>集中投遞 8–12 間公司，用實務經驗確認職涯方向。</p>
+                <button class="btn ghost" data-add-plan="實習優先：建立 12 間公司投遞清單">加入計畫</button>
+              </article>
+              <article class="scenario">
+                <div class="scenario-kicker mono">SCENARIO C</div><h4>研究優先</h4><p>提前進實驗室，建立研究問題與推薦信基礎。</p>
+                <button class="btn ghost" data-add-plan="研究優先：聯繫 3 位潛在指導教授">加入計畫</button>
+              </article>
+            </div>
+            <div class="timeline">
+              <h3>建議時間線</h3>
+              <div class="timeline-row"><time class="mono">OCT</time><div><b>整理定位與申請素材</b><span>履歷初稿、LinkedIn、專題敘事、目標清單</span></div></div>
+              <div class="timeline-row"><time class="mono">NOV</time><div><b>密集投遞與資訊訪談</b><span>每週 2–3 份客製申請；完成 2 次 coffee chat</span></div></div>
+              <div class="timeline-row"><time class="mono">DEC</time><div><b>依回饋調整路線</b><span>檢視面試轉換率，決定寒假研究投入比重</span></div></div>
+              <div class="timeline-row"><time class="mono">JAN–MAR</time><div><b>補強作品與研究準備</b><span>完成可公開作品；建立推薦信與讀書計畫素材庫</span></div></div>
+            </div>
+          </div>
+
+          <div class="view" id="view-compare">
+            <div class="ai-label mono">SCENARIO MATRIX</div>
+            <div class="answer"><p>三個方案都可行，差別在於你願意多早做出取捨。以你目前的資訊來看，雙軌的選項價值最高。</p></div>
+            <div class="compare-grid">
+              <div class="compare-cell head">評估面向</div><div class="compare-cell head">實習優先</div><div class="compare-cell head">雙軌並行</div>
+              <div class="compare-cell">每週投入</div><div class="compare-cell">8–10 小時</div><div class="compare-cell">10–12 小時</div>
+              <div class="compare-cell">保留彈性</div><div class="compare-cell">中</div><div class="compare-cell">高</div>
+              <div class="compare-cell">適合情境</div><div class="compare-cell">想快速驗證職涯</div><div class="compare-cell">尚未確定升學或就業</div>
+              <div class="compare-cell">主要風險</div><div class="compare-cell">錯過研究準備窗口</div><div class="compare-cell">時間分散、需嚴格排序</div>
+            </div>
+            <button class="btn primary" style="margin-top:14px" data-add-plan="雙軌準備：設定每週 10 小時固定時段">採用雙軌並行</button>
+          </div>
+
+          <div class="view" id="view-sources">
+            <div class="ai-label mono">SOURCE CABINET · 12 ITEMS</div>
+            <article class="source-card"><h3>臺大 115 學年度碩士班甄試招生簡章</h3><p>包含重要日程、報名資格、繳交資料與各系所規定。規劃研究所申請時應以最新公告為準。</p><div class="meta"><span>官方網站</span><span>3 小時前檢查</span></div></article>
+            <article class="source-card"><h3>臺大職涯中心｜實習與職缺</h3><p>彙整校園徵才、企業說明會與部分實習職缺，可搭配公司官網交叉確認截止日。</p><div class="meta"><span>官方網站</span><span>2 小時前檢查</span></div></article>
+            <article class="source-card"><h3>資管系學會 × 校友職涯分享</h3><p>近期公開活動與經驗分享，適合尋找 coffee chat 對象與產業探索線索。</p><div class="meta"><span>公開社群</span><span>昨天檢查</span></div></article>
+            <article class="source-card"><h3>企業實習頁面合輯</h3><p>依職能標籤整理資料分析、產品與軟體相關職缺。送出申請前請回到企業官網確認。</p><div class="meta"><span>公開網頁</span><span>今天檢查</span></div></article>
+          </div>
+        </div>
+
+        <div class="composer-wrap">
+          <div class="composer">
+            <textarea id="prompt" rows="2" aria-label="詢問 AI Coach" placeholder="問選課、實習、研究所、社團或找學長姊…"></textarea>
+            <div class="composer-bottom"><div class="quick"><button data-prompt="哪些實習快截止？">快截止的實習</button><button data-prompt="幫我比較三條路線">比較三條路線</button><button data-prompt="幫我找適合 coffee chat 的學長姊">找學長姊</button></div><button class="send" id="send" aria-label="送出">↑</button></div>
+          </div>
+        </div>
+      </section>
+
+      <button class="drawer-backdrop" id="drawer-backdrop" aria-label="關閉個人檔案"></button>
+      <aside class="right" data-mobile-panel="profile" aria-label="個人檔案側欄">
+        <div class="pane-head">
+          <div><div class="eyebrow mono">PERSONAL VAULT</div><h2>個人檔案櫃</h2></div>
+          <button class="icon-btn" id="close-profile" aria-label="關閉個人檔案">×</button>
+        </div>
+        <div class="right-body">
+          <section class="profile-card">
+            <div class="avatar-row"><div class="avatar">YC</div><div><h3>游同學</h3><p>資管系 · 大三 · GPA 3.72</p></div></div>
+            <div class="tags"><span class="tag">資訊管理學系</span><span class="tag">資料科學學程</span></div>
+            <div class="study-summary">
+              <div class="study-total"><div><b>92</b><span> / 128 學分</span></div><span>畢業進度 72%</span></div>
+              <div class="credit-track"><span></span></div>
+              <div class="credit-grid">
+                <div class="credit-stat"><b>12</b><span>必修待修</span></div>
+                <div class="credit-stat"><b>18</b><span>選修待修</span></div>
+                <div class="credit-stat"><b>6</b><span>通識待修</span></div>
+              </div>
+            </div>
+          </section>
+
+          <div class="section-row"><div class="section-title">申請素材</div><div class="section-note">4 份</div></div>
+          <div class="file-list" id="file-list">
+            <div class="file"><div class="file-icon mono">PDF</div><div><b>履歷_v3.pdf</b><span>昨天更新 · 1.2 MB</span></div><i class="file-status ready"></i></div>
+            <div class="file"><div class="file-icon mono">PDF</div><div><b>歷年成績單.pdf</b><span>官方版本 · 840 KB</span></div><i class="file-status ready"></i></div>
+            <div class="file"><div class="file-icon mono">DOC</div><div><b>讀書計畫_草稿</b><span>完整度 45%</span></div><i class="file-status"></i></div>
+            <div class="file"><div class="file-icon mono">URL</div><div><b>GitHub Portfolio</b><span>3 個公開專案</span></div><i class="file-status ready"></i></div>
+          </div>
+          <input id="file-input" type="file" hidden />
+          <button class="btn ghost full add-task" id="upload">＋ 加入申請素材</button>
+
+          <div class="notice">這是互動產品原型。正式版會在每則建議旁標示來源、資料時間與可信度；Facebook 與校內資料也需要依權限與平台規範串接。</div>
+        </div>
+      </aside>
+    </main>
+
+    <section class="feature-page" id="page-calendar" aria-label="日曆">
+      <div class="feature-shell">
+        <header class="feature-head">
+          <div><div class="eyebrow mono">PLAN & COLLABORATE</div><h1 id="calendar-month-title">2026 年 10 月</h1><p>把 AI 建議、申請截止日與協作任務放進同一個時間軸。</p></div>
+          <div class="feature-actions"><button class="btn primary mobile-create" id="new-calendar-event-head">＋ 任務</button><button class="btn ghost" id="calendar-prev">←</button><button class="btn ghost" id="calendar-today">今天</button><button class="btn ghost" id="calendar-next">→</button><button class="btn primary" id="google-calendar-open">Google Calendar ↗</button></div>
+        </header>
+        <div class="feature-body calendar-body">
+          <aside class="calendar-side">
+            <button class="btn primary full" id="new-calendar-event">＋ 建立任務</button>
+            <div class="calendar-mini-title">我的日曆</div>
+            <div class="calendar-legend">
+              <label><span class="legend-dot"></span>我的任務</label>
+              <label><span class="legend-dot gray"></span>協作任務</label>
+              <label><span class="legend-dot dark"></span>生涯截止日</label>
+            </div>
+            <div class="calendar-note">加入 Gmail 協作者後，系統會把來賓帶入 Google Calendar 建立頁；由你確認送出邀請，網站不會取得你的 Google 密碼。</div>
+          </aside>
+          <div class="calendar-main">
+            <div class="week-row"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+            <div class="calendar-grid" id="calendar-grid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-page" id="page-columns" aria-label="專欄">
+      <div class="feature-shell">
+        <header class="feature-head">
+          <div><div class="eyebrow mono">NTU COMMUNITY NOTES</div><h1>專欄</h1><p>由台大學生與校友分享選擇、方法與真實經驗。</p></div>
+          <div class="feature-actions"><button class="btn ghost" id="my-bookmarks">我的收藏</button><button class="btn primary" id="focus-post">撰寫貼文</button></div>
+        </header>
+        <div class="feature-body columns-body">
+          <aside class="column-categories">
+            <div class="eyebrow mono" style="margin-bottom:12px">TOPICS</div>
+            <div class="category-list">
+              <button class="category-button active" data-category="all"><span>全部文章</span><span>24</span></button>
+              <button class="category-button" data-category="course"><span>選課與學習</span><span>08</span></button>
+              <button class="category-button" data-category="career"><span>實習與求職</span><span>11</span></button>
+              <button class="category-button" data-category="graduate"><span>研究所</span><span>06</span></button>
+              <button class="category-button" data-category="community"><span>社團與校園</span><span>09</span></button>
+              <button class="category-button" data-category="abroad"><span>交換與海外</span><span>05</span></button>
+              <button class="category-button" data-category="life"><span>生涯探索</span><span>12</span></button>
+            </div>
+          </aside>
+          <main class="columns-main">
+            <section class="post-composer" id="post-composer">
+              <div class="post-composer-top"><div class="post-avatar">YC</div><textarea id="post-content" placeholder="分享一個對其他台大生有幫助的經驗、方法或觀察…"></textarea></div>
+              <div class="post-composer-bottom"><span>以 游同學 發布 · 請避免張貼個資與未經驗證的招募資訊</span><button class="btn primary" id="publish-post">發布貼文</button></div>
+            </section>
+            <div class="post-feed" id="post-feed">
+              <article class="post-card" data-category="career"><div class="post-author"><div class="post-avatar">AL</div><div><b>AL｜資管系校友</b><span>資料產品 · 2 小時前</span></div></div><h3 class="post-title">第一份資料實習，我會更早準備的三件事</h3><p class="post-copy">不要只列工具。用一頁說清楚你處理了什麼問題、如何做取捨，以及結果改變了什麼。面試官真正想知道的是你的判斷過程。</p><div class="post-actions"><button data-like>♡ 42</button><button data-save>＋ 收藏</button></div></article>
+              <article class="post-card" data-category="graduate"><div class="post-author"><div class="post-avatar">CY</div><div><b>青衍｜電機所碩二</b><span>研究生活 · 昨天</span></div></div><h3 class="post-title">找指導教授前，先問自己的四個問題</h3><p class="post-copy">研究題目固然重要，但回饋頻率、實驗室文化與你期待的生活方式也同樣關鍵。把問題寫下來再去 coffee chat。</p><div class="post-actions"><button data-like>♡ 67</button><button data-save>＋ 收藏</button></div></article>
+              <article class="post-card" data-category="course"><div class="post-author"><div class="post-avatar">SN</div><div><b>山寧｜外文系大四</b><span>跨域學習 · 3 天前</span></div></div><h3 class="post-title">非本科生怎麼開始學資料分析</h3><p class="post-copy">先用一個自己真的在意的問題開始，比從語法章節一路讀完有效。我的第一個專案是分析校園活動資訊如何被錯過。</p><div class="post-actions"><button data-like>♡ 31</button><button data-save>＋ 收藏</button></div></article>
+              <article class="post-card" data-category="abroad"><div class="post-author"><div class="post-avatar">KL</div><div><b>Kai｜國企系校友</b><span>海外職涯 · 5 天前</span></div></div><h3 class="post-title">交換不是空白年：如何留下可說的成果</h3><p class="post-copy">除了修課，把跨文化合作、獨立解題與當地社群參與轉成具體故事，回來後不論求職或申請都更容易被理解。</p><div class="post-actions"><button data-like>♡ 54</button><button data-save>＋ 收藏</button></div></article>
+            </div>
+          </main>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-page" id="page-talent" aria-label="人才庫">
+      <div class="feature-shell">
+        <header class="feature-head">
+          <div><div class="eyebrow mono">PEOPLE DIRECTORY</div><h1>人才庫</h1><p>找到能回答下一個問題的人，建立低壓力、有目的的連結。</p></div>
+          <div class="feature-actions"><button class="btn ghost" id="role-models-only">我的 Role Models</button></div>
+        </header>
+        <div class="feature-body directory-body">
+          <aside class="directory-filters">
+            <div class="filter-group"><h3>領域</h3><select class="filter-select" id="talent-field"><option value="all">全部領域</option><option>科技與軟體</option><option>資料與 AI</option><option>產品與設計</option><option>金融與投資</option><option>顧問與策略</option><option>行銷與品牌</option><option>法律與公共政策</option><option>教育與研究</option><option>新創與創業</option><option>媒體與創意</option><option>製造與供應鏈</option><option>永續與社會影響</option></select></div>
+            <div class="filter-group"><h3>年級／狀態</h3><div class="filter-options"><label class="filter-check"><input type="checkbox" name="level" value="大一">大一</label><label class="filter-check"><input type="checkbox" name="level" value="大二">大二</label><label class="filter-check"><input type="checkbox" name="level" value="大三">大三</label><label class="filter-check"><input type="checkbox" name="level" value="大四">大四</label><label class="filter-check"><input type="checkbox" name="level" value="碩博士">碩博士</label><label class="filter-check"><input type="checkbox" name="level" value="畢業">畢業</label></div></div>
+            <div class="filter-group"><h3>性別</h3><div class="filter-options"><label class="filter-check"><input type="checkbox" name="gender" value="男">男</label><label class="filter-check"><input type="checkbox" name="gender" value="女">女</label></div></div>
+            <button class="btn ghost full" id="clear-talent-filters">清除篩選</button>
+          </aside>
+          <main class="directory-main">
+            <div class="directory-toolbar"><input class="filter-input" id="talent-search" placeholder="搜尋人才庫：姓名、系所、領域或經歷"><button class="btn primary" id="join-directory">加入人才庫</button><button class="btn ghost" id="edit-talent-page">修改我的頁面</button></div>
+            <div class="talent-summary"><span id="talent-result-count">找到 6 位學長姊與同學</span><span>依共同背景與回覆意願排序</span></div>
+            <div class="talent-grid" id="talent-grid">
+              <article class="talent-card" data-field="資料與 AI" data-level="畢業" data-gender="女"><div class="talent-person"><div class="talent-avatar">JL</div><div><h3>林佳樂</h3><div class="talent-meta">2022 畢業 · 資訊管理學系</div></div></div><p class="talent-bio">資料產品經理，願意聊資料職涯、作品集與第一份實習選擇。</p><div class="talent-tags"><span>資料與 AI</span><span>產品</span><span>校友</span></div><div class="talent-card-actions"><button class="btn primary" data-coffee>coffee chat invitation</button><button class="btn ghost" data-chat>聊聊</button><button class="btn ghost" data-role>＋ Role model</button></div></article>
+              <article class="talent-card" data-field="金融與投資" data-level="大四" data-gender="男"><div class="talent-person"><div class="talent-avatar">WC</div><div><h3>王承宇</h3><div class="talent-meta">大四 · 財務金融學系</div></div></div><p class="talent-bio">曾任投資研究實習生，關注科技產業與量化研究。</p><div class="talent-tags"><span>金融與投資</span><span>研究</span><span>實習</span></div><div class="talent-card-actions"><button class="btn primary" data-coffee>coffee chat invitation</button><button class="btn ghost" data-chat>聊聊</button><button class="btn ghost" data-role>＋ Role model</button></div></article>
+              <article class="talent-card" data-field="顧問與策略" data-level="畢業" data-gender="女"><div class="talent-person"><div class="talent-avatar">YT</div><div><h3>唐予恬</h3><div class="talent-meta">2020 畢業 · 國際企業學系</div></div></div><p class="talent-bio">策略顧問，擅長 case interview、商業分析與跨國申請。</p><div class="talent-tags"><span>顧問與策略</span><span>商業分析</span></div><div class="talent-card-actions"><button class="btn primary" data-coffee>coffee chat invitation</button><button class="btn ghost" data-chat>聊聊</button><button class="btn ghost" data-role>＋ Role model</button></div></article>
+              <article class="talent-card" data-field="產品與設計" data-level="碩博士" data-gender="男"><div class="talent-person"><div class="talent-avatar">HC</div><div><h3>陳海川</h3><div class="talent-meta">碩二 · 資訊網路與多媒體所</div></div></div><p class="talent-bio">UX 研究與產品設計，喜歡把複雜流程做成清楚的工具。</p><div class="talent-tags"><span>產品與設計</span><span>UX Research</span></div><div class="talent-card-actions"><button class="btn primary" data-coffee>coffee chat invitation</button><button class="btn ghost" data-chat>聊聊</button><button class="btn ghost" data-role>＋ Role model</button></div></article>
+              <article class="talent-card" data-field="新創與創業" data-level="大三" data-gender="女"><div class="talent-person"><div class="talent-avatar">SH</div><div><h3>許思涵</h3><div class="talent-meta">大三 · 經濟學系</div></div></div><p class="talent-bio">校園新創共同創辦人，關注使用者訪談、成長與學生創業。</p><div class="talent-tags"><span>新創與創業</span><span>Growth</span></div><div class="talent-card-actions"><button class="btn primary" data-coffee>coffee chat invitation</button><button class="btn ghost" data-chat>聊聊</button><button class="btn ghost" data-role>＋ Role model</button></div></article>
+              <article class="talent-card" data-field="永續與社會影響" data-level="畢業" data-gender="男"><div class="talent-person"><div class="talent-avatar">KP</div><div><h3>潘凱平</h3><div class="talent-meta">2023 畢業 · 社會學系</div></div></div><p class="talent-bio">社會影響力顧問，熟悉非營利組織、ESG 與政策研究。</p><div class="talent-tags"><span>永續與社會影響</span><span>政策</span></div><div class="talent-card-actions"><button class="btn primary" data-coffee>coffee chat invitation</button><button class="btn ghost" data-chat>聊聊</button><button class="btn ghost" data-role>＋ Role model</button></div></article>
+            </div>
+          </main>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-page" id="page-resume" aria-label="履歷工作室">
+      <div class="feature-shell">
+        <header class="feature-head">
+          <div><div class="eyebrow mono">AI RESUME STUDIO</div><h1>修履歷</h1><p>上傳、拆解、改寫，再重新組成一份乾淨可投遞的履歷。</p></div>
+          <div class="feature-actions"><button class="btn primary" id="export-resume-top">匯出 PDF</button></div>
+        </header>
+        <div class="feature-body resume-body">
+          <main class="resume-editor">
+            <div class="resume-start-row"><section class="resume-upload"><div><h3 id="resume-file-label">上傳現有履歷</h3><p>支援 PDF、DOCX、PPTX；載入後建立可編輯草稿。</p></div><div class="feature-actions"><input id="resume-file" type="file" accept=".pdf,.doc,.docx,.pptx" hidden><button class="btn ghost" id="upload-resume">選擇檔案</button><button class="btn primary" id="analyze-resume">AI 判讀</button></div></section><button class="resume-add-card" id="add-resume-section"><span>＋</span>新增區塊<small>自訂標題與欄位類型</small></button></div>
+            <div id="resume-sections"></div>
+          </main>
+          <aside class="resume-preview-pane">
+            <div class="preview-toolbar"><span class="mono">A4 · REFERENCE FORMAT · TIMES NEW ROMAN 11 PT</span><div class="preview-actions"><button class="btn ghost" id="reset-resume">重設</button><button class="btn primary" id="export-resume">匯出 PDF</button></div></div>
+            <article class="resume-paper" id="resume-paper"></article>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <nav class="mobile-nav" aria-label="行動版導覽">
+      <button class="active" data-mobile="plan">計畫</button><button data-mobile="coach">AI Coach</button><button data-mobile="profile">檔案</button>
+    </nav>
+  </div>
+
+  <dialog id="task-dialog">
+    <div class="dialog-head"><h3>新增待辦</h3><button class="icon-btn" data-close-dialog>×</button></div>
+    <div class="dialog-body">
+      <div class="field"><label for="task-name">待辦內容</label><input id="task-name" placeholder="例如：完成實習履歷初稿" /></div>
+      <div class="field"><label for="task-date">截止日期</label><input id="task-date" type="date" /></div>
+    </div>
+    <div class="dialog-actions"><button class="btn ghost" data-close-dialog>取消</button><button class="btn primary" id="save-task">加入待辦</button></div>
+  </dialog>
+  <dialog id="calendar-dialog">
+    <div class="dialog-head"><h3>建立日曆任務</h3><button class="icon-btn" data-close-calendar>×</button></div>
+    <div class="dialog-body">
+      <div class="field"><label for="event-title">任務名稱</label><input id="event-title" placeholder="例如：Coffee chat with Amy" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px"><div class="field"><label for="event-date">日期</label><input id="event-date" type="date" /></div><div class="field"><label for="event-time">時間</label><input id="event-time" type="time" value="10:00" /></div></div>
+      <div class="field"><label for="event-guests">邀請協作者（Gmail，可用逗號分隔）</label><input id="event-guests" type="text" placeholder="teammate@gmail.com" /></div>
+      <div class="field"><label for="event-notes">說明</label><input id="event-notes" placeholder="議程、準備資料或會議連結" /></div>
+    </div>
+    <div class="dialog-actions"><button class="btn ghost" data-close-calendar>取消</button><button class="btn ghost" id="save-calendar-local">只加入 Next@NTU</button><button class="btn primary" id="save-calendar-google">加入並帶到 Google</button></div>
+  </dialog>
+  <dialog id="talent-dialog">
+    <div class="dialog-head"><h3 id="talent-dialog-title">加入人才庫</h3><button class="icon-btn" data-close-talent>×</button></div>
+    <div class="dialog-body">
+      <div class="avatar-upload"><div class="avatar-preview" id="talent-avatar-preview">YC</div><div><input id="talent-avatar-input" type="file" accept="image/png,image/jpeg,image/webp" hidden><button class="btn ghost" id="upload-talent-avatar" type="button">上傳大頭照</button><p>支援 JPG、PNG、WebP；此原型只儲存在你的瀏覽器。</p></div></div>
+      <div class="field"><label for="talent-name">顯示名稱</label><input id="talent-name" placeholder="你的名字或暱稱" /></div>
+      <div class="field"><label for="talent-dept">系所</label><input id="talent-dept" placeholder="例如：資訊管理學系" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px"><div class="field"><label for="talent-level-input">年級／狀態</label><input id="talent-level-input" placeholder="大三、碩二或 2024 畢業" /></div><div class="field"><label for="talent-field-input">領域</label><input id="talent-field-input" placeholder="資料與 AI" /></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px"><div class="field"><label for="talent-grad-year">畢業年份（選填）</label><input id="talent-grad-year" type="number" min="1950" max="2100" placeholder="2028" /></div><div class="field"><label for="talent-response-status">回覆狀態</label><select id="talent-response-status"><option value="active">積極回覆中</option><option value="later">較晚回覆</option></select></div></div>
+      <div class="field"><label for="talent-linkedin">LinkedIn 連結</label><input id="talent-linkedin" type="url" placeholder="https://www.linkedin.com/in/yourname" /></div>
+      <div class="field"><label for="talent-intro">想和大家聊什麼？</label><input id="talent-intro" placeholder="簡短描述可分享的經驗" /></div>
+    </div>
+    <div class="dialog-actions"><button class="btn ghost" data-close-talent>取消</button><button class="btn primary" id="save-talent-page">儲存頁面</button></div>
+  </dialog>
+  <dialog id="resume-section-dialog">
+    <div class="dialog-head"><h3>新增履歷區塊</h3><button class="icon-btn" data-close-resume-section>×</button></div>
+    <div class="dialog-body">
+      <div class="field"><label for="new-section-title">區塊標題</label><input id="new-section-title" placeholder="例如：Research Experience" /></div>
+      <div class="field"><label for="new-section-type">欄位類型</label><select id="new-section-type"><option value="experience">經歷（機構、職稱、日期、內容）</option><option value="education">教育（學校、學位、日期、內容）</option><option value="skills">簡短項目（分類、內容）</option></select></div>
+    </div>
+    <div class="dialog-actions"><button class="btn ghost" data-close-resume-section>取消</button><button class="btn primary" id="save-resume-section">新增區塊</button></div>
+  </dialog>
+  <dialog id="settings-dialog">
+    <div class="dialog-head"><h3 id="settings-title">設定</h3><button class="icon-btn" data-close-settings>×</button></div>
+    <div class="dialog-body settings-options">
+      <div class="settings-group"><span id="theme-label">介面顏色</span><div class="segmented"><button type="button" data-theme-choice="dark">深色</button><button type="button" data-theme-choice="light">淺色</button></div></div>
+      <div class="settings-group"><span id="language-label">語言</span><div class="segmented"><button type="button" data-language-choice="zh">繁體中文</button><button type="button" data-language-choice="en">English</button></div></div>
+    </div>
+    <div class="dialog-actions"><button class="btn primary" data-close-settings id="settings-done">完成</button></div>
+  </dialog>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const $ = (s, r=document) => r.querySelector(s);
+    const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+    const escapeHtml=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char]));
+    const toast = (message) => { const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(window.__toast); window.__toast=setTimeout(()=>el.classList.remove('show'),2200); };
+
+    const translationPairs=[
+      ['日曆','Calendar'],['專欄','Columns'],['人才庫','Talent'],['修履歷','Resume'],['個人檔案','Profile'],['設定','Settings'],['資料更新 2 小時前','Updated 2 hours ago'],['工作區','Workspace'],
+      ['提問紀錄','Question history'],['資料夾','Folders'],['所有問題','All questions'],['生涯待辦','Career to-do'],['新增問題','New question'],['個人檔案櫃','Personal vault'],['關閉個人檔案','Close profile'],
+      ['日曆與協作任務','Calendar & collaborative tasks'],['校園專欄','Campus columns'],['AI 履歷工作室','AI resume studio'],['建立任務','Create task'],['今天','Today'],['加入人才庫','Join directory'],['修改我的頁面','Edit my page'],['搜尋人才庫','Search talent'],
+      ['修履歷','Resume'],['匯出 PDF','Export PDF'],['上傳現有履歷','Upload an existing resume'],['選擇檔案','Choose file'],['AI 判讀','AI parse'],['新增區塊','Add section'],['自訂標題與欄位類型','Custom title and field type'],['重設','Reset'],
+      ['個人資料','Personal Information'],['英文姓名','English name'],['城市／國家','City / Country'],['電話','Phone'],['LinkedIn／作品集（選填）','LinkedIn / Portfolio (optional)'],['新增一筆','Add entry'],['＋ 新增一筆','＋ Add entry'],['刪除這筆','Delete entry'],['學校','School'],['學位／主修','Degree / Major'],['公司／組織','Company / Organization'],['職稱／角色','Title / Role'],['開始日期','Start date'],['結束日期','End date'],['內容（每行一點）','Details (one bullet per line)'],['分類','Category'],['內容','Details'],
+      ['介面顏色','Interface color'],['深色','Dark'],['淺色','Light'],['語言','Language'],['繁體中文','Traditional Chinese'],['完成','Done'],
+      ['顯示名稱','Display name'],['系所','Department'],['年級／狀態','Year / Status'],['領域','Field'],['畢業年份（選填）','Graduation year (optional)'],['回覆狀態','Response status'],['積極回覆中','Actively replying'],['較晚回覆','Replies later'],['上傳大頭照','Upload profile photo'],['想和大家聊什麼？','What would you like to discuss?'],['儲存頁面','Save page'],['取消','Cancel'],
+      ['新增履歷區塊','Add resume section'],['區塊標題','Section title'],['欄位類型','Field type'],['新增區塊','Add section'],['經歷（機構、職稱、日期、內容）','Experience (organization, role, dates, details)'],['教育（學校、學位、日期、內容）','Education (school, degree, dates, details)'],['簡短項目（分類、內容）','Short items (category, details)'],['支援 PDF、DOCX、PPTX；載入後建立可編輯草稿。','Supports PDF, DOCX and PPTX; creates an editable draft after upload.']
+    ];
+    const zhToEn=Object.fromEntries(translationPairs), enToZh=Object.fromEntries(translationPairs.map(([zh,en])=>[en,zh]));
+    const placeholderPairs={
+      '搜尋人才庫：姓名、系所、領域或經歷':'Search by name, department, field or experience',
+      '問選課、實習、研究所、社團或找學長姊…':'Ask about courses, internships, graduate school, clubs or alumni…',
+      '你的名字或暱稱':'Your name or nickname','例如：資訊管理學系':'e.g. Information Management','大三、碩二或 2024 畢業':'Junior, second-year master’s, or graduate','資料與 AI':'Data & AI','簡短描述可分享的經驗':'Briefly describe what you can share','例如：Research Experience':'e.g. Research Experience'
+    };
+    function applyLanguage(language){
+      const map=language==='en'?zhToEn:enToZh;
+      const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+      let node;while(node=walker.nextNode()){
+        if(['SCRIPT','STYLE'].includes(node.parentElement?.tagName))continue;
+        const raw=node.nodeValue,trimmed=raw.trim();if(map[trimmed])node.nodeValue=raw.replace(trimmed,map[trimmed]);
+      }
+      $$('[placeholder]').forEach(el=>{const value=el.getAttribute('placeholder');if(language==='en'&&placeholderPairs[value])el.setAttribute('placeholder',placeholderPairs[value]);else if(language==='zh'){const zh=Object.keys(placeholderPairs).find(key=>placeholderPairs[key]===value);if(zh)el.setAttribute('placeholder',zh);}});
+      document.documentElement.lang=language==='en'?'en':'zh-Hant';
+      const profileButton=$('.profile-toggle');profileButton.textContent=language==='en'?'YC　Profile':'YC　個人檔案';profileButton.setAttribute('aria-label',language==='en'?'Open profile':'開啟個人檔案');
+      $('#open-settings').setAttribute('aria-label',language==='en'?'Settings':'設定');$('#open-settings').title=language==='en'?'Settings':'設定';
+      $('#close-profile').setAttribute('aria-label',language==='en'?'Close profile':'關閉個人檔案');
+      const personalTitle=$('input[aria-label="個人資料區"]');if(personalTitle)personalTitle.value=language==='en'?'Personal Information':'個人資料';
+      localStorage.setItem('ntu-path-language',language);
+      $$('[data-language-choice]').forEach(button=>button.classList.toggle('active',button.dataset.languageChoice===language));
+      const activePage=$('.product-nav button.active')?.dataset.page||'coach';
+      const titles=language==='en'?{coach:'Junior-year internship × graduate school plan',calendar:'Calendar & collaborative tasks',columns:'Campus columns',talent:'Talent directory',resume:'AI resume studio'}:{coach:'大三實習 × 研究所雙軌規劃',calendar:'日曆與協作任務',columns:'校園專欄',talent:'人才庫',resume:'AI 履歷工作室'};
+      $('.crumb strong').textContent=titles[activePage];
+    }
+    function applyTheme(theme){
+      document.body.classList.toggle('theme-light',theme==='light');
+      document.querySelector('meta[name="theme-color"]').content=theme==='light'?'#f4f4f1':'#0a0a0a';
+      localStorage.setItem('ntu-path-theme',theme);
+      $$('[data-theme-choice]').forEach(button=>button.classList.toggle('active',button.dataset.themeChoice===theme));
+    }
+    const savedTheme=localStorage.getItem('ntu-path-theme')||'dark',savedLanguage=localStorage.getItem('ntu-path-language')||'zh';
+    applyTheme(savedTheme);applyLanguage(savedLanguage);
+    const settingsDialog=$('#settings-dialog');
+    $('#open-settings').addEventListener('click',()=>settingsDialog.showModal());
+    $$('[data-close-settings]').forEach(button=>button.addEventListener('click',()=>settingsDialog.close()));
+    $$('[data-theme-choice]').forEach(button=>button.addEventListener('click',()=>applyTheme(button.dataset.themeChoice)));
+    $$('[data-language-choice]').forEach(button=>button.addEventListener('click',()=>applyLanguage(button.dataset.languageChoice)));
+
+    const enterWorkspace = () => {
+      document.body.classList.add('signed-in');
+      sessionStorage.setItem('ntu-path-demo-session','active');
+      setTimeout(()=>$('#prompt')?.focus(),120);
+    };
+    if(sessionStorage.getItem('ntu-path-demo-session')==='active') document.body.classList.add('signed-in');
+    $('#demo-login').addEventListener('click', enterWorkspace);
+    $('#login-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const email=$('#login-email').value.trim(), password=$('#login-password').value;
+      if(!email || !password){ toast('請輸入 Email 與密碼，或使用示範帳號'); return; }
+      enterWorkspace();
+    });
+
+    $$('.history-tab').forEach(tab=>tab.addEventListener('click',()=>{
+      $$('.history-tab').forEach(x=>x.classList.remove('active')); tab.classList.add('active');
+      $$('.history-view').forEach(x=>x.classList.remove('active')); $(`#history-${tab.dataset.history}`).classList.add('active');
+    }));
+    $('#new-question').addEventListener('click',()=>{ document.body.classList.add('signed-in'); $('#prompt').value=''; $('#prompt').focus(); toast('開始一個新問題'); });
+    $$('.question').forEach(q=>q.addEventListener('click',()=>{
+      $$('.question').forEach(x=>x.classList.remove('active')); q.classList.add('active');
+      $('.crumb strong').textContent=$('b',q).textContent;
+      $('.chat-title-row h1').textContent=$('b',q).textContent;
+      toast('已開啟過去的提問');
+    }));
+
+    const saved = JSON.parse(localStorage.getItem('ntu-path-tasks') || '{}');
+    $$('.todo').forEach(todo => {
+      const box=$('.check', todo), id=todo.dataset.id;
+      if (saved[id] !== undefined) box.checked=saved[id];
+      todo.classList.toggle('done', box.checked);
+      box.addEventListener('change', () => {
+        todo.classList.toggle('done', box.checked); saved[id]=box.checked;
+        localStorage.setItem('ntu-path-tasks', JSON.stringify(saved)); updateProgress();
+      });
+    });
+    function updateProgress(){
+      const all=$$('.todo'), done=all.filter(x=>$('.check',x)?.checked).length;
+      $('#task-count').textContent=all.filter(x=>!$('.check',x)?.checked).length;
+      $('#progress-label').textContent=`${done + 2} / ${all.length + 3}`;
+      $('#progress-bar').style.width=`${Math.round((done+2)/(all.length+3)*100)}%`;
+    }
+    updateProgress();
+
+    $$('.tab').forEach(tab => tab.addEventListener('click', () => {
+      $$('.tab').forEach(t=>t.classList.remove('active')); tab.classList.add('active');
+      $$('.view').forEach(v=>v.classList.remove('active')); $(`#view-${tab.dataset.view}`).classList.add('active');
+      $('#chat-scroll').scrollTop=0;
+    }));
+
+    function addPlan(title, date='11/15'){
+      const id='task-'+Date.now();
+      const el=document.createElement('article'); el.className='todo'; el.dataset.id=id;
+      el.innerHTML=`<div class="todo-top"><input class="check" type="checkbox" aria-label="完成 ${title}"><div class="todo-title"></div></div><div class="todo-bottom"><span class="date">${date}</span><span class="badge">AI 建議</span></div>`;
+      $('.todo-title',el).textContent=title; $('#active-list').prepend(el);
+      const box=$('.check',el); box.addEventListener('change',()=>{el.classList.toggle('done',box.checked);saved[id]=box.checked;localStorage.setItem('ntu-path-tasks',JSON.stringify(saved));updateProgress();});
+      updateProgress(); toast('已加入你的生涯待辦');
+    }
+    $$('[data-add-plan]').forEach(b=>b.addEventListener('click',()=>addPlan(b.dataset.addPlan)));
+
+    const dialog=$('#task-dialog');
+    $('#add-task').addEventListener('click',()=>dialog.showModal());
+    $$('[data-close-dialog]').forEach(b=>b.addEventListener('click',()=>dialog.close()));
+    $('#save-task').addEventListener('click',()=>{
+      const name=$('#task-name').value.trim(); if(!name){toast('先輸入待辦內容');return;}
+      const raw=$('#task-date').value; const date=raw?raw.slice(5).replace('-','/'):'未設定'; addPlan(name,date); dialog.close(); $('#task-name').value='';
+    });
+
+    const profile=$('.right'), backdrop=$('#drawer-backdrop');
+    const setProfile = open => { profile.classList.toggle('open',open); backdrop.classList.toggle('open',open); };
+    $('.profile-toggle').addEventListener('click',()=>setProfile(!profile.classList.contains('open')));
+    $('#close-profile').addEventListener('click',()=>setProfile(false));
+    backdrop.addEventListener('click',()=>setProfile(false));
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')setProfile(false);});
+    $('#upload').addEventListener('click',()=>$('#file-input').click());
+    $('#file-input').addEventListener('change',e=>{
+      const f=e.target.files[0]; if(!f)return;
+      const ext=(f.name.split('.').pop()||'FILE').toUpperCase().slice(0,3);
+      const row=document.createElement('div'); row.className='file';
+      row.innerHTML=`<div class="file-icon mono">${ext}</div><div><b></b><span>剛剛加入 · ${(f.size/1024/1024).toFixed(1)} MB</span></div><i class="file-status ready"></i>`;
+      $('b',row).textContent=f.name; $('#file-list').prepend(row); toast('素材已加入檔案櫃');
+    });
+
+    $$('.quick button').forEach(b=>b.addEventListener('click',()=>{ $('#prompt').value=b.dataset.prompt; $('#prompt').focus(); }));
+    function sendPrompt(){
+      const input=$('#prompt'), q=input.value.trim(); if(!q)return;
+      $('.tab[data-view="chat"]').click(); const view=$('#view-chat');
+      const row=document.createElement('div'); row.className='user-row'; const bubble=document.createElement('div'); bubble.className='user-bubble'; bubble.textContent=q; row.appendChild(bubble); view.appendChild(row);
+      const ai=document.createElement('div'); ai.innerHTML='<div class="ai-label mono">PATH COACH · SEARCHING</div><div class="typing"><span></span><span></span><span></span></div>'; view.appendChild(ai); input.value=''; $('#chat-scroll').scrollTop=$('#chat-scroll').scrollHeight;
+      setTimeout(()=>{
+        const coffee=/學長|coffee/i.test(q), deadline=/截止|實習/i.test(q);
+        const copy=coffee?'我會先依你的系所、目標職能與共同經歷，整理適合聯繫的學長姊輪廓。建議先從 3 位低關係距離的人開始，邀請訊息只問一個具體問題，並把訪談控制在 20 分鐘。':deadline?'目前優先處理履歷初稿與 10/18 的實習申請。正式版會同步企業官網、臺大職涯中心與公開社群，並在截止日前 14、7、2 天提醒你。':'我已把問題拆成「必要條件、可選路徑、最近一步」三層。先完成一個 30 分鐘內能開始的動作，再依結果更新時間線，會比一次規劃完整學期更可靠。';
+        ai.innerHTML=`<div class="ai-label mono">PATH COACH · PERSONALIZED</div><div class="answer"><p>${copy}</p></div><div class="source-row"><span class="source"><b>01</b>個人檔案</span><span class="source"><b>02</b>公開資料</span></div>`;
+        $('#chat-scroll').scrollTop=$('#chat-scroll').scrollHeight;
+      },850);
+    }
+    $('#send').addEventListener('click',sendPrompt);
+    $('#prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendPrompt();}});
+    $('#new-plan').addEventListener('click',()=>{ $('#prompt').value=''; $('#prompt').focus(); toast('告訴我你現在最想解決的問題'); });
+
+    $$('.mobile-nav button').forEach(b=>b.addEventListener('click',()=>{
+      $$('.mobile-nav button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+      const key=b.dataset.mobile;
+      if(key==='profile'){ setProfile(true); return; }
+      setProfile(false); $$('[data-mobile-panel]').forEach(x=>x.classList.toggle('mobile-active',x.dataset.mobilePanel===key));
+    }));
+
+    // Product-level pages
+    const pageTitles={zh:{coach:'大三實習 × 研究所雙軌規劃',calendar:'日曆與協作任務',columns:'校園專欄',talent:'人才庫',resume:'AI 履歷工作室'},en:{coach:'Junior-year internship × graduate school plan',calendar:'Calendar & collaborative tasks',columns:'Campus columns',talent:'Talent directory',resume:'AI resume studio'}};
+    function openProductPage(page){
+      $$('.product-nav button').forEach(button=>button.classList.toggle('active',button.dataset.page===page));
+      $$('.feature-page').forEach(section=>section.classList.toggle('active',section.id===`page-${page}`));
+      $('.mobile-nav').classList.toggle('page-hidden',page!=='coach');
+      const language=localStorage.getItem('ntu-path-language')||'zh';
+      $('.crumb strong').textContent=pageTitles[language]?.[page]||pageTitles.zh.coach;
+      setProfile(false);
+      if(page==='calendar') renderCalendar();
+      if(page==='resume') renderResume();
+      if(language==='en')applyLanguage('en');
+    }
+    $$('.product-nav button').forEach(button=>button.addEventListener('click',()=>openProductPage(button.dataset.page)));
+
+    // Calendar — local planning plus user-confirmed Google Calendar handoff.
+    const calendarDialog=$('#calendar-dialog');
+    let calendarCursor=new Date(2026,9,1);
+    const seedEvents=[
+      {id:'seed-1',title:'英文履歷初稿',date:'2026-10-12',time:'18:00',guests:'',notes:'完成第一版並請同學 review',type:'career'},
+      {id:'seed-2',title:'Coffee chat：資料產品',date:'2026-10-16',time:'14:00',guests:'mentor@gmail.com',notes:'準備三個職涯問題',type:'shared'},
+      {id:'seed-3',title:'台積電實習截止',date:'2026-10-18',time:'23:00',guests:'',notes:'送出前再次確認附件',type:'career'}
+    ];
+    let calendarEvents=JSON.parse(localStorage.getItem('ntu-path-calendar-events')||'null')||seedEvents;
+    const pad=n=>String(n).padStart(2,'0');
+    const localDateKey=date=>`${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+    function renderCalendar(){
+      if(!$('#calendar-grid')) return;
+      const y=calendarCursor.getFullYear(),m=calendarCursor.getMonth();
+      $('#calendar-month-title').textContent=`${y} 年 ${m+1} 月`;
+      const first=new Date(y,m,1), start=new Date(y,m,1-first.getDay());
+      const today='2026-10-06';
+      $('#calendar-grid').innerHTML='';
+      for(let i=0;i<42;i++){
+        const date=new Date(start); date.setDate(start.getDate()+i); const key=localDateKey(date);
+        const cell=document.createElement('div'); cell.className='day-cell';
+        if(date.getMonth()!==m) cell.classList.add('outside');
+        if(key===today) cell.classList.add('today');
+        cell.innerHTML=`<div class="day-number">${date.getDate()}</div>`;
+        calendarEvents.filter(event=>event.date===key).forEach(event=>{
+          const item=document.createElement('div'); item.className=`cal-event ${event.type||''}`; item.textContent=`${event.time||''} ${event.title}`.trim(); item.title=event.title; cell.appendChild(item);
+        });
+        cell.addEventListener('click',()=>openCalendarDialog(key)); $('#calendar-grid').appendChild(cell);
+      }
+    }
+    function openCalendarDialog(date=localDateKey(new Date(2026,9,6)),title=''){
+      $('#event-date').value=date; $('#event-title').value=title; $('#event-guests').value=''; $('#event-notes').value=''; calendarDialog.showModal();
+      setTimeout(()=>$('#event-title').focus(),50);
+    }
+    function eventFromForm(){
+      const title=$('#event-title').value.trim(),date=$('#event-date').value,time=$('#event-time').value||'10:00';
+      const guests=$('#event-guests').value.split(',').map(x=>x.trim()).filter(Boolean);
+      if(!title||!date){toast('請填寫任務名稱與日期');return null;}
+      if(guests.some(email=>!/^\S+@gmail\.com$/i.test(email))){toast('協作者請輸入有效的 Gmail 帳號');return null;}
+      return {id:`event-${Date.now()}`,title,date,time,guests:guests.join(','),notes:$('#event-notes').value.trim(),type:guests.length?'shared':''};
+    }
+    function saveCalendarEvent(openGoogle=false){
+      const event=eventFromForm(); if(!event)return;
+      calendarEvents.push(event); localStorage.setItem('ntu-path-calendar-events',JSON.stringify(calendarEvents)); renderCalendar(); calendarDialog.close(); toast('任務已加入日曆');
+      if(openGoogle){
+        const compact=event.date.replaceAll('-',''), time=event.time.replace(':','');
+        const start=`${compact}T${time}00`, endDate=new Date(`${event.date}T${event.time}:00`); endDate.setHours(endDate.getHours()+1);
+        const end=`${localDateKey(endDate).replaceAll('-','')}T${pad(endDate.getHours())}${pad(endDate.getMinutes())}00`;
+        const params=new URLSearchParams({action:'TEMPLATE',text:event.title,dates:`${start}/${end}`,details:event.notes||'由 Next@NTU 建立'});
+        event.guests.split(',').filter(Boolean).forEach(email=>params.append('add',email));
+        window.open(`https://calendar.google.com/calendar/render?${params.toString()}`,'_blank','noopener');
+      }
+    }
+    $('#new-calendar-event').addEventListener('click',()=>openCalendarDialog());
+    $('#new-calendar-event-head').addEventListener('click',()=>openCalendarDialog());
+    $$('[data-close-calendar]').forEach(button=>button.addEventListener('click',()=>calendarDialog.close()));
+    $('#save-calendar-local').addEventListener('click',()=>saveCalendarEvent(false));
+    $('#save-calendar-google').addEventListener('click',()=>saveCalendarEvent(true));
+    $('#calendar-prev').addEventListener('click',()=>{calendarCursor.setMonth(calendarCursor.getMonth()-1);renderCalendar();});
+    $('#calendar-next').addEventListener('click',()=>{calendarCursor.setMonth(calendarCursor.getMonth()+1);renderCalendar();});
+    $('#calendar-today').addEventListener('click',()=>{calendarCursor=new Date(2026,9,1);renderCalendar();});
+    $('#google-calendar-open').addEventListener('click',()=>window.open('https://calendar.google.com/calendar/u/0/r','_blank','noopener'));
+    renderCalendar();
+
+    // Editorial feed
+    function bindPostActions(root=document){
+      $$('[data-like]',root).forEach(button=>{if(button.dataset.bound)return;button.dataset.bound='1';button.addEventListener('click',()=>{const match=button.textContent.match(/(\d+)/);let count=Number(match?.[1]||0);button.classList.toggle('active');button.textContent=`${button.classList.contains('active')?'♥':'♡'} ${count+(button.classList.contains('active')?1:0)}`;});});
+      $$('[data-save]',root).forEach(button=>{if(button.dataset.bound)return;button.dataset.bound='1';button.addEventListener('click',()=>{button.classList.toggle('active');button.textContent=button.classList.contains('active')?'✓ 已收藏':'＋ 收藏';});});
+    }
+    bindPostActions();
+    $$('.category-button').forEach(button=>button.addEventListener('click',()=>{
+      $$('.category-button').forEach(x=>x.classList.remove('active'));button.classList.add('active');
+      const category=button.dataset.category;$$('.post-card').forEach(card=>card.hidden=category!=='all'&&card.dataset.category!==category);
+    }));
+    $('#focus-post').addEventListener('click',()=>$('#post-content').focus());
+    $('#my-bookmarks').addEventListener('click',()=>{const saved=$$('.post-card').filter(card=>$('[data-save]',card)?.classList.contains('active'));$$('.post-card').forEach(card=>card.hidden=!saved.includes(card));toast(saved.length?`顯示 ${saved.length} 篇收藏`:'目前還沒有收藏文章');});
+    $('#publish-post').addEventListener('click',()=>{
+      const copy=$('#post-content').value.trim();if(!copy){toast('先寫下一些內容');return;}
+      const card=document.createElement('article');card.className='post-card';card.dataset.category='life';
+      card.innerHTML='<div class="post-author"><div class="post-avatar">YC</div><div><b>游同學</b><span>生涯探索 · 剛剛</span></div></div><h3 class="post-title">新的經驗分享</h3><p class="post-copy"></p><div class="post-actions"><button data-like>♡ 0</button><button data-save>＋ 收藏</button></div>';
+      $('.post-copy',card).textContent=copy;$('#post-feed').prepend(card);$('#post-content').value='';bindPostActions(card);toast('貼文已發布');
+    });
+
+    // Talent directory
+    let roleOnly=false;
+    function filterTalent(){
+      const query=$('#talent-search').value.trim().toLowerCase(), field=$('#talent-field').value;
+      const levels=$$('input[name="level"]:checked').map(x=>x.value), genders=$$('input[name="gender"]:checked').map(x=>x.value);
+      let visible=0;
+      $$('.talent-card').forEach(card=>{
+        const matchesText=!query||card.textContent.toLowerCase().includes(query),matchesField=field==='all'||card.dataset.field===field;
+        const matchesLevel=!levels.length||levels.includes(card.dataset.level),matchesGender=!genders.length||genders.includes(card.dataset.gender);
+        const matchesRole=!roleOnly||card.dataset.role==='true';card.hidden=!(matchesText&&matchesField&&matchesLevel&&matchesGender&&matchesRole);if(!card.hidden)visible++;
+      });
+      $('#talent-result-count').textContent=`找到 ${visible} 位學長姊與同學`;
+    }
+    $('#talent-search').addEventListener('input',filterTalent);$('#talent-field').addEventListener('change',filterTalent);
+    $$('input[name="level"],input[name="gender"]').forEach(input=>input.addEventListener('change',filterTalent));
+    $('#clear-talent-filters').addEventListener('click',()=>{$('#talent-search').value='';$('#talent-field').value='all';$$('input[name="level"],input[name="gender"]').forEach(x=>x.checked=false);roleOnly=false;$('#role-models-only').classList.remove('selected');filterTalent();});
+    $('#role-models-only').addEventListener('click',()=>{roleOnly=!roleOnly;$('#role-models-only').classList.toggle('selected',roleOnly);filterTalent();});
+    function bindTalentCardActions(root=document){
+      $$('[data-role]',root).forEach(button=>{if(button.dataset.bound)return;button.dataset.bound='1';button.addEventListener('click',()=>{const card=button.closest('.talent-card');card.dataset.role=card.dataset.role==='true'?'false':'true';const on=card.dataset.role==='true';button.classList.toggle('selected',on);button.textContent=on?'✓ 我的 Role model':'＋ Role model';toast(on?'已加入 Role Models':'已移除 Role Model');});});
+      $$('[data-chat]',root).forEach(button=>{if(button.dataset.bound)return;button.dataset.bound='1';button.addEventListener('click',()=>toast(`已開啟與 ${$('h3',button.closest('.talent-card')).textContent} 的對話`));});
+      $$('[data-coffee]',root).forEach(button=>{if(button.dataset.bound)return;button.dataset.bound='1';button.addEventListener('click',()=>{const name=$('h3',button.closest('.talent-card')).textContent;openProductPage('calendar');openCalendarDialog('2026-10-20',`Coffee chat with ${name}`);$('#event-notes').value='想了解你的學習／職涯路徑，預計 20–30 分鐘。';});});
+    }
+    $$('.talent-card').forEach((card,index)=>{const heading=$('h3',card);if(!heading.closest('.talent-name-row')){const row=document.createElement('div');row.className='talent-name-row';heading.before(row);row.append(heading);const badge=document.createElement('span');badge.className=`reply-status ${index%3===1?'later':''}`;badge.textContent=index%3===1?'較晚回覆':'積極回覆中';row.append(badge);}});
+    bindTalentCardActions();
+    const talentDialog=$('#talent-dialog');
+    let talentAvatarData='';
+    const savedTalentProfile=()=>JSON.parse(localStorage.getItem('ntu-path-talent-profile')||'null');
+    function setTalentAvatarPreview(value,name='YC'){$('#talent-avatar-preview').innerHTML=value?`<img src="${escapeHtml(value)}" alt="大頭照預覽">`:escapeHtml((name.match(/\b[A-Za-z]/g)||[...name]).slice(0,2).join('').toUpperCase()||'YC');}
+    function openTalentDialog(edit=false){
+      $('#talent-dialog-title').textContent=edit?'修改我的頁面':'加入人才庫';
+      const stored=savedTalentProfile(),data=edit&&stored?stored:edit?{name:'游同學',dept:'資訊管理學系',level:'大三',field:'資料與 AI',gradYear:'',linkedin:'',status:'active',intro:'想聊資料實習、跨域學習與 AI 產品。',avatar:''}:{name:'',dept:'',level:'',field:'',gradYear:'',linkedin:'',status:'active',intro:'',avatar:''};
+      $('#talent-name').value=data.name;$('#talent-dept').value=data.dept;$('#talent-level-input').value=data.level;$('#talent-field-input').value=data.field;$('#talent-grad-year').value=data.gradYear||'';$('#talent-linkedin').value=data.linkedin||'';$('#talent-response-status').value=data.status||'active';$('#talent-intro').value=data.intro;talentAvatarData=data.avatar||'';setTalentAvatarPreview(talentAvatarData,data.name||'YC');talentDialog.showModal();
+      if((localStorage.getItem('ntu-path-language')||'zh')==='en')applyLanguage('en');
+    }
+    $('#join-directory').addEventListener('click',()=>openTalentDialog(false));$('#edit-talent-page').addEventListener('click',()=>openTalentDialog(true));
+    $$('[data-close-talent]').forEach(button=>button.addEventListener('click',()=>talentDialog.close()));
+    $('#upload-talent-avatar').addEventListener('click',()=>$('#talent-avatar-input').click());
+    $('#talent-avatar-input').addEventListener('change',event=>{const file=event.target.files[0];if(!file)return;if(file.size>2*1024*1024){toast('大頭照請小於 2 MB');return;}const reader=new FileReader();reader.onload=()=>{talentAvatarData=reader.result;setTalentAvatarPreview(talentAvatarData,$('#talent-name').value||'YC');};reader.readAsDataURL(file);});
+    function renderMyTalentCard(data){
+      let card=$('.talent-card[data-self="true"]');if(!card){card=document.createElement('article');card.className='talent-card';card.dataset.self='true';$('#talent-grid').prepend(card);}
+      card.dataset.field=data.field;card.dataset.level=data.level||'畢業';card.dataset.gender='';
+      const initials=(data.name.match(/\b[A-Za-z]/g)||[...data.name]).slice(0,2).join('').toUpperCase();
+      const avatar=data.avatar?`<img src="${escapeHtml(data.avatar)}" alt="${escapeHtml(data.name)} 的大頭照">`:escapeHtml(initials);
+      const meta=[data.gradYear?`${data.gradYear} 畢業`:data.level,data.dept].filter(Boolean).join(' · '),link=data.linkedin?`<a href="${escapeHtml(data.linkedin)}" target="_blank" rel="noopener">LinkedIn ↗</a>`:'';
+      card.innerHTML=`<div class="talent-person"><div class="talent-avatar">${avatar}</div><div><div class="talent-name-row"><h3>${escapeHtml(data.name)}</h3><span class="reply-status ${data.status==='later'?'later':''}">${data.status==='later'?'較晚回覆':'積極回覆中'}</span></div><div class="talent-meta">${escapeHtml(meta)}</div></div></div><p class="talent-bio">${escapeHtml(data.intro)} ${link}</p><div class="talent-tags"><span>${escapeHtml(data.field||'探索中')}</span><span>我的頁面</span></div><div class="talent-card-actions"><button class="btn primary" data-coffee>coffee chat invitation</button><button class="btn ghost" data-chat>聊聊</button><button class="btn ghost" data-role>＋ Role model</button></div>`;
+      bindTalentCardActions(card);filterTalent();if((localStorage.getItem('ntu-path-language')||'zh')==='en')applyLanguage('en');
+    }
+    $('#save-talent-page').addEventListener('click',()=>{const data={name:$('#talent-name').value.trim(),dept:$('#talent-dept').value.trim(),level:$('#talent-level-input').value.trim(),field:$('#talent-field-input').value.trim(),gradYear:$('#talent-grad-year').value.trim(),linkedin:$('#talent-linkedin').value.trim(),status:$('#talent-response-status').value,intro:$('#talent-intro').value.trim(),avatar:talentAvatarData};if(!data.name){toast('請填寫顯示名稱');return;}if(data.linkedin&&!/^https?:\/\//i.test(data.linkedin)){toast('LinkedIn 連結請以 https:// 開頭');return;}try{localStorage.setItem('ntu-path-talent-profile',JSON.stringify(data));}catch(error){data.avatar='';localStorage.setItem('ntu-path-talent-profile',JSON.stringify(data));toast('圖片過大，已儲存其他資料');}renderMyTalentCard(data);talentDialog.close();toast('你的人才頁面已儲存');});
+    const initialTalent=savedTalentProfile();if(initialTalent)renderMyTalentCard(initialTalent);
+
+    // Resume studio
+    const blankResumeEntry=()=>({organization:'',location:'',role:'',startDate:'',endDate:'',description:''});
+    const defaultResumeData=()=>({
+      profile:{fullName:'YOUR NAME',cityCountry:'Taipei, Taiwan',phone:'09xx-xxx-xxx',email:'name@example.com',linkedIn:''},
+      sections:[
+        {title:'Education',type:'education',entries:[{organization:'National Taiwan University',location:'Taipei, Taiwan',role:'Bachelor of Management in Information Management',startDate:'Sep 2024',endDate:'Jun 2028',description:'Relevant courses: Data Analysis, Statistics, Product Management'}]},
+        {title:'Professional Experience',type:'experience',entries:[
+          {organization:'Example Technology',location:'Taipei, Taiwan',role:'Data Analyst Intern',startDate:'Jun 2026',endDate:'Aug 2026',description:'Built a weekly product funnel dashboard and reduced manual reporting time by 40%.\nPartnered with product and marketing teams to define experiment metrics.'},
+          {organization:'Student Research Lab',location:'Taipei, Taiwan',role:'Research Assistant',startDate:'Jan 2026',endDate:'May 2026',description:'Analyzed survey data and summarized findings for a faculty research project.'}
+        ]},
+        {title:'Extracurricular Experience',type:'experience',entries:[{organization:'NTU Data Analytics Club',location:'Taipei, Taiwan',role:'Project Lead',startDate:'Sep 2025',endDate:'Present',description:'Led a five-person team to analyze campus event discovery behavior.\nPresented recommendations to student organizers.'}]},
+        {title:'Leadership Experience',type:'experience',entries:[{organization:'College Student Association',location:'Taipei, Taiwan',role:'Head of Public Relations',startDate:'Sep 2024',endDate:'May 2025',description:'Hosted career development sessions with alumni speakers.\nCoordinated a corporate visit for 50 students.'}]},
+        {title:'Skills and Interests',type:'skills',entries:[{organization:'Techniques',location:'',role:'',startDate:'',endDate:'',description:'Python, SQL, Excel, Figma'}, {organization:'Interests',location:'',role:'',startDate:'',endDate:'',description:'Product analytics, education technology, urban walking'}]}
+      ]
+    });
+    function migrateResumeData(value){
+      if(value?.profile&&Array.isArray(value.sections))return value;
+      if(Array.isArray(value)){
+        const [oldProfile,...oldSections]=value;
+        return {profile:{fullName:oldProfile?.org||'YOUR NAME',cityCountry:oldProfile?.dates||'Taipei, Taiwan',phone:'',email:'',linkedIn:''},sections:oldSections.map(section=>({title:section.title||'Section',type:/skill/i.test(section.title||'')?'skills':/education/i.test(section.title||'')?'education':'experience',entries:[{organization:section.org||'',location:'',role:section.role||'',startDate:section.dates||'',endDate:'',description:section.description||''}]}))};
+      }
+      return defaultResumeData();
+    }
+    let resumeData=migrateResumeData(JSON.parse(localStorage.getItem('ntu-path-resume')||'null'));
+    function saveResume(){localStorage.setItem('ntu-path-resume',JSON.stringify(resumeData));}
+    function labelsFor(type){return type==='education'?{organization:'學校',role:'學位／主修'}:type==='skills'?{organization:'分類',role:'內容'}:{organization:'公司／組織',role:'職稱／角色'};}
+    function renderResumeEditor(){
+      const holder=$('#resume-sections');if(!holder)return;
+      const profile=resumeData.profile;
+      const profileEditor=`<section class="resume-section"><div class="resume-section-head"><input value="個人資料" aria-label="個人資料區" readonly></div><div class="resume-fields profile-fields"><label>英文姓名<input data-profile-key="fullName" value="${escapeHtml(profile.fullName)}" placeholder="Yun Chien, Lu"></label><label>城市／國家<input data-profile-key="cityCountry" value="${escapeHtml(profile.cityCountry)}" placeholder="New Taipei City, Taiwan"></label><label>電話<input data-profile-key="phone" value="${escapeHtml(profile.phone)}" placeholder="0958-xxx-xxx"></label><label>Email<input data-profile-key="email" value="${escapeHtml(profile.email)}" placeholder="name@gmail.com"></label><label class="wide">LinkedIn／作品集（選填）<input data-profile-key="linkedIn" value="${escapeHtml(profile.linkedIn)}" placeholder="linkedin.com/in/yourname"></label></div></section>`;
+      const sections=resumeData.sections.map((section,sectionIndex)=>{
+        const labels=labelsFor(section.type);
+        const entries=section.entries.map((entry,entryIndex)=>`<article class="resume-entry-editor" data-entry-index="${entryIndex}"><div class="resume-entry-head"><span class="mono">ENTRY ${pad(entryIndex+1)}</span><button data-delete-entry title="刪除這筆資料">刪除這筆</button></div><div class="resume-fields">${section.type==='skills'?`<label>${labels.organization}<input data-entry-key="organization" value="${escapeHtml(entry.organization)}"></label><label>${labels.role}<input data-entry-key="description" value="${escapeHtml(entry.description)}"></label>`:`<label>${labels.organization}<input data-entry-key="organization" value="${escapeHtml(entry.organization)}"></label><label>城市／地點<input data-entry-key="location" value="${escapeHtml(entry.location)}"></label><label>${labels.role}<input data-entry-key="role" value="${escapeHtml(entry.role)}"></label><label>開始日期<input data-entry-key="startDate" value="${escapeHtml(entry.startDate)}" placeholder="Sep 2025"></label><label>結束日期<input data-entry-key="endDate" value="${escapeHtml(entry.endDate)}" placeholder="Present"></label><label class="wide">內容（每行一點）<textarea data-entry-key="description">${escapeHtml(entry.description)}</textarea></label>`}</div></article>`).join('');
+        return `<section class="resume-section" data-section-index="${sectionIndex}"><div class="resume-section-head"><input data-section-key="title" value="${escapeHtml(section.title)}" aria-label="區塊名稱"><button class="btn ghost resume-section-add" data-add-entry>＋ 新增一筆</button><button class="icon-btn" data-move="up" title="上移區塊">↑</button><button class="icon-btn" data-delete-section title="刪除區塊">×</button></div>${entries}</section>`;
+      }).join('');
+      holder.innerHTML=profileEditor+sections;
+    }
+    function renderResumePreview(){
+      const profile=resumeData.profile,paper=$('#resume-paper');if(!paper)return;
+      const contact=[profile.phone?`Tel: ${profile.phone}`:'',profile.email?`Email: ${profile.email}`:'',profile.linkedIn||''].filter(Boolean).join(' | ');
+      const sections=resumeData.sections.map(section=>{
+        const entries=section.entries.map(entry=>{
+          if(section.type==='skills')return `<div class="paper-skill-row"><b>${escapeHtml(entry.organization)}:</b>${escapeHtml(entry.description)}</div>`;
+          const org=[entry.organization,entry.location].filter(Boolean).join(', '),dates=[entry.startDate,entry.endDate].filter(Boolean).join(' - ');
+          const bullets=entry.description.split(/\n+/).map(line=>line.replace(/^[•·\-*]\s*/, '').trim()).filter(Boolean).map(line=>`<li>${escapeHtml(line)}</li>`).join('');
+          return `<div class="paper-entry"><div class="paper-entry-top"><b>${escapeHtml(org)}</b><time>${escapeHtml(dates)}</time></div>${entry.role?`<div class="paper-role">${escapeHtml(entry.role)}</div>`:''}${bullets?`<ul>${bullets}</ul>`:''}</div>`;
+        }).join('');
+        return `<section class="paper-section"><h2>${escapeHtml(section.title)}</h2>${entries}</section>`;
+      }).join('');
+      paper.innerHTML=`<header class="paper-profile"><h1>${escapeHtml(profile.fullName||'YOUR NAME')}</h1><p class="paper-location">${escapeHtml(profile.cityCountry)}</p><p class="contact">${escapeHtml(contact)}</p></header>${sections}`;
+    }
+    function renderResume(){renderResumeEditor();renderResumePreview();if((localStorage.getItem('ntu-path-language')||'zh')==='en')applyLanguage('en');}
+    $('#resume-sections').addEventListener('input',event=>{
+      if(event.target.dataset.profileKey){resumeData.profile[event.target.dataset.profileKey]=event.target.value;saveResume();renderResumePreview();return;}
+      const sectionEl=event.target.closest('[data-section-index]');if(!sectionEl)return;const section=resumeData.sections[Number(sectionEl.dataset.sectionIndex)];
+      if(event.target.dataset.sectionKey)section[event.target.dataset.sectionKey]=event.target.value;
+      if(event.target.dataset.entryKey){const entryEl=event.target.closest('[data-entry-index]');section.entries[Number(entryEl.dataset.entryIndex)][event.target.dataset.entryKey]=event.target.value;}
+      saveResume();renderResumePreview();
+    });
+    $('#resume-sections').addEventListener('click',event=>{
+      const sectionEl=event.target.closest('[data-section-index]');if(!sectionEl)return;const sectionIndex=Number(sectionEl.dataset.sectionIndex),section=resumeData.sections[sectionIndex];
+      if(event.target.closest('[data-add-entry]')){section.entries.push(blankResumeEntry());saveResume();renderResume();setTimeout(()=>{$$('.resume-section').at(sectionIndex+1)?.querySelectorAll('.resume-entry-editor')?.item(section.entries.length-1)?.scrollIntoView({behavior:'smooth',block:'center'});},20);return;}
+      const entryEl=event.target.closest('[data-entry-index]');if(event.target.closest('[data-delete-entry]')&&entryEl){section.entries.splice(Number(entryEl.dataset.entryIndex),1);saveResume();renderResume();return;}
+      if(event.target.closest('[data-delete-section]')){resumeData.sections.splice(sectionIndex,1);saveResume();renderResume();return;}
+      if(event.target.closest('[data-move="up"]')&&sectionIndex>0){[resumeData.sections[sectionIndex-1],resumeData.sections[sectionIndex]]=[resumeData.sections[sectionIndex],resumeData.sections[sectionIndex-1]];saveResume();renderResume();}
+    });
+    const resumeSectionDialog=$('#resume-section-dialog');
+    $('#add-resume-section').addEventListener('click',()=>{$('#new-section-title').value='';$('#new-section-type').value='experience';resumeSectionDialog.showModal();setTimeout(()=>$('#new-section-title').focus(),30);if((localStorage.getItem('ntu-path-language')||'zh')==='en')applyLanguage('en');});
+    $$('[data-close-resume-section]').forEach(button=>button.addEventListener('click',()=>resumeSectionDialog.close()));
+    $('#save-resume-section').addEventListener('click',()=>{const title=$('#new-section-title').value.trim(),type=$('#new-section-type').value;if(!title){toast('請輸入區塊標題');return;}resumeData.sections.push({title,type,entries:[blankResumeEntry()]});saveResume();renderResume();resumeSectionDialog.close();setTimeout(()=>{$$('.resume-section').at(-1)?.scrollIntoView({behavior:'smooth',block:'center'});},20);toast(`已新增 ${title}`);});
+    $('#upload-resume').addEventListener('click',()=>$('#resume-file').click());
+    $('#resume-file').addEventListener('change',event=>{const file=event.target.files[0];if(!file)return;$('#resume-file-label').textContent=file.name;toast('檔案已載入，可開始 AI 判讀');});
+    $('#analyze-resume').addEventListener('click',()=>{const button=$('#analyze-resume');button.disabled=true;button.textContent='判讀中…';$('#resume-sections').classList.add('analyzing');setTimeout(()=>{resumeData=defaultResumeData();saveResume();renderResume();$('#resume-sections').classList.remove('analyzing');button.disabled=false;button.textContent='AI 判讀';toast('已拆成 5 個區塊與多筆可編輯資料');},900);});
+    $('#reset-resume').addEventListener('click',()=>{resumeData=defaultResumeData();saveResume();renderResume();toast('已還原附件版式的示範履歷');});
+    const exportResume=()=>{toast('正在開啟列印／PDF 匯出');setTimeout(()=>window.print(),180);};
+    $('#export-resume').addEventListener('click',exportResume);$('#export-resume-top').addEventListener('click',exportResume);
+    renderResume();
+
+    // Expose the same core planning actions to supported AI browsers.
+    const modelContext = document.modelContext;
+    if (modelContext?.registerTool) {
+      const reportToolError = (error) => console.warn('WebMCP tool unavailable', error);
+      Promise.resolve(modelContext.registerTool({
+        name:'list_career_todos', title:'列出生涯待辦',
+        description:'Read the student career todos currently visible in Next@NTU, including completion state and due date.',
+        inputSchema:{type:'object',properties:{},additionalProperties:false},
+        annotations:{readOnlyHint:true,untrustedContentHint:false},
+        execute(){
+          return {todos:$$('.todo').map(item=>({
+            title:$('.todo-title',item)?.textContent?.trim()||'',
+            completed:Boolean($('.check',item)?.checked),
+            due:$('.date',item)?.textContent?.trim()||''
+          }))};
+        }
+      })).catch(reportToolError);
+      Promise.resolve(modelContext.registerTool({
+        name:'add_career_todo', title:'加入生涯待辦',
+        description:'Add one user-approved career action to the visible Next@NTU todo list.',
+        inputSchema:{type:'object',properties:{title:{type:'string',minLength:1,maxLength:120},due:{type:'string',maxLength:30}},required:['title'],additionalProperties:false},
+        annotations:{readOnlyHint:false,untrustedContentHint:false},
+        execute(input){
+          if(!input || typeof input.title!=='string' || !input.title.trim()) throw new Error('title is required');
+          const title=input.title.trim().slice(0,120), due=typeof input.due==='string'&&input.due.trim()?input.due.trim().slice(0,30):'未設定';
+          addPlan(title,due);
+          return {added:true,title,due,openTodoCount:Number($('#task-count').textContent)};
+        }
+      })).catch(reportToolError);
+    }
+  </script>
+</body>
+</html>
